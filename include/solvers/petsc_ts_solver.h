@@ -29,14 +29,13 @@
 #include "libmesh/libmesh_common.h"
 #include "libmesh/reference_counted_object.h"
 #include "libmesh/parallel_object.h"
-//#include "libmesh/auto_ptr.h"
 #include "libmesh/petsc_ts_system.h"
 
 // PETSc includes
-EXTERN_C_FOR_PETSC_BEGIN
+// This only works with petsc-3.3 and above.
+#if !PETSC_VERSION_LESS_THAN(3,3,0)
 # include <petscts.h>
 # include <petscdm.h>
-EXTERN_C_FOR_PETSC_END
 
 namespace libMesh
 {
@@ -234,5 +233,6 @@ protected:
 
 } // namespace libMesh
 
+#endif // #ifedf !PETSC_VERSION_LESS_THAN(3,3,0)
 #endif // #ifdef LIBMESH_HAVE_PETSC
 #endif // LIBMESH_PETSC_TS_SOLVER_H
