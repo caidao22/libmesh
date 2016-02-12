@@ -1,10 +1,3 @@
-//
-//  petsc_ts_system.c
-//  
-//
-//  Created by Xujun Zhao on 5/5/15.
-//
-//
 #include "libmesh/exodusII_io.h"
 #include "libmesh/equation_systems.h"
 #include "libmesh/libmesh_logging.h"
