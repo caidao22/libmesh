@@ -978,136 +978,6 @@ Real boundary_pressure(const Point& pt,
 }
 
 
-
-// ============================================================================================
-// ============================================================================================
-int write_out_section_profile(const libMesh::EquationSystems& es,
-                              const Real x_pos,
-                              const unsigned int y_div,
-                              const unsigned int n_step)
-{
-  // Get a reference to the Stokes system object.
-  const TransientLinearImplicitSystem & navier_stokes_system =
-         es.get_system<TransientLinearImplicitSystem> ("Navier-Stokes");
-  const Real XA =  es.parameters.get<Real> ("XA_boundary");
-  const Real XB =  es.parameters.get<Real> ("XB_boundary");
-  const Real YA =  es.parameters.get<Real> ("YA_boundary");
-  const Real YB =  es.parameters.get<Real> ("YB_boundary");
-  
-  libmesh_example_requires(x_pos <= XB, " x_pos must be between XA and XB");
-  libmesh_example_requires(x_pos >= XA, " x_pos must be between XA and XB");
-  const Real h = (YB - YA)/Real(y_div);
-  
-  // Numeric ids corresponding to each variable in the system
-  const unsigned int u_var = navier_stokes_system.variable_number ("u");  // u_var = 0
-
-  // write out data
-  {
-    std::string filename = "u_profile_" + std::to_string(x_pos) + "_" + std::to_string(n_step) + ".txt";
-    std::ofstream outfile(filename,std::ios_base::out);
-    
-    //
-    for ( unsigned int i=0; i<y_div+1; ++i )
-    {
-      const Real y_coord = YA + Real(i)*h;  // y coordinate of the point
-      Point pt(x_pos,y_coord);
-      const Real u_value = navier_stokes_system.point_value(u_var,pt);
-      outfile << y_coord << "   " << u_value << "\n";
-    } // end for i-loop
-    
-    outfile.close();
-    std::cout << "====================== u profile at the cross section is write out! ================="
-    <<std::endl;
-  } // end if
-  
-  return 0;
-}
-
-
-  
-// ============================================================================================
-// ============================================================================================
-int write_out_section_profile_history(const libMesh::EquationSystems& es,
-                                      const Real x_pos,
-                                      const unsigned int y_div,
-                                      const unsigned int n_step,
-                                      const Real time)
-{
-  // Get a reference to the Stokes system object and its parameters.
-  const TransientLinearImplicitSystem & navier_stokes_system =
-  es.get_system<TransientLinearImplicitSystem> ("Navier-Stokes");
-  const Real XA =  es.parameters.get<Real> ("XA_boundary");
-  const Real XB =  es.parameters.get<Real> ("XB_boundary");
-  const Real YA =  es.parameters.get<Real> ("YA_boundary");
-  const Real YB =  es.parameters.get<Real> ("YB_boundary");
-  
-  libmesh_example_requires(x_pos <= XB, " x_pos must be between XA and XB");
-  libmesh_example_requires(x_pos >= XA, " x_pos must be between XA and XB");
-  const Real h = (YB - YA)/Real(y_div);
-  
-  // Numeric ids corresponding to each variable in the system
-  const unsigned int u_var = navier_stokes_system.variable_number ("u");  // u_var = 0
-  
-  // write out history data
-  {
-    std::string filename = "u_profile_history_" + std::to_string(x_pos) + ".txt";
-    std::ofstream outfile;
-    int o_width = 15, o_precision = 9;
-    
-    if(n_step==1 )
-    {
-      // first, we write the y coordinates
-      outfile.open(filename,std::ios_base::out);
-      outfile.setf(std::ios::right);    outfile.setf(std::ios::fixed);
-      outfile.precision(o_precision);   outfile.width(o_width);
-      if( es.comm().rank()==0 )outfile << 0 ; // fill zeros for time step and time
-      
-      outfile.setf(std::ios::right);    outfile.setf(std::ios::fixed);
-      outfile.precision(o_precision);   outfile.width(o_width);
-      if( es.comm().rank()==0 )outfile << 0.0; // fill zeros for time step and time
-      
-      for ( unsigned int i=0; i<y_div+1; ++i )
-      {
-        const Real y_coord = YA + Real(i)*h;  // y coordinate of the point
-        outfile.setf(std::ios::right);  outfile.setf(std::ios::fixed);
-        outfile.precision(o_precision);           outfile.width(o_width);
-        if( es.comm().rank()==0 ) outfile  << y_coord; // write the coords at the first time step
-      }
-      if( es.comm().rank()==0 ) outfile << "\n";
-      
-    }
-    
-    if(n_step>1)
-    {
-      outfile.open(filename,std::ios_base::app);
-      outfile.setf(std::ios::right);  outfile.setf(std::ios::fixed);
-      outfile.precision(o_precision); outfile.width(o_width);
-      if( es.comm().rank()==0 )outfile << n_step;    // time step and time
-      
-      outfile.setf(std::ios::right);  outfile.setf(std::ios::fixed);
-      outfile.precision(o_precision); outfile.width(o_width);
-      if( es.comm().rank()==0 )outfile << time;    // time step and time
-      
-      for ( unsigned int i=0; i<y_div+1; ++i )
-      {
-        const Real y_coord = YA + Real(i)*h;  // y coordinate of the point
-        Point pt(x_pos,y_coord);
-        const Real u_value = navier_stokes_system.point_value(u_var,pt);
-        outfile.setf(std::ios::right);  outfile.setf(std::ios::fixed);
-        outfile.precision(o_precision); outfile.width(o_width);
-        if( es.comm().rank()==0 ) outfile  << u_value;
-      } // end for i-loop
-      if( es.comm().rank()==0 ) outfile << "\n";
-    }
-    
-    outfile.close();
-    std::cout << "=================== u profile at the cross section is write out! ================="
-              <<std::endl;
-  }
-
-  return 0;
-}
-
 void NSPetscTSSystem:: IFunction (Real time,
                              const NumericVector<Number>& X,
                              const NumericVector<Number>& Xdot,
@@ -1138,11 +1008,6 @@ void NSPetscTSSystem::monitor (int  step, Real time,
                              NumericVector<Number>& X)
 {
   // do nothing
-  const Real x_pos = -50.0;
-  const unsigned int ny_mesh = 30;
-  const unsigned int y_div = ny_mesh*2;   // for 2nd order Q2 element
-  write_out_section_profile_history(this->get_equation_systems(),x_pos,y_div,step,time);
-
 #ifdef LIBMESH_HAVE_EXODUS_API
 //  // We write the file in the ExodusII format.
 //    std::ostringstream file_name;
@@ -1160,21 +1025,9 @@ void NSPetscTSSystem::monitor (int  step, Real time,
   if ( step==0 )
     ExodusII_IO(this->get_mesh()).write_equation_systems (exodus_filename,
                                                           this->get_equation_systems());
-
   // output options from transient ex1
-    ExodusII_IO exodus_IO(this->get_mesh());
-    exodus_IO.append(true);
-    exodus_IO.write_timestep (exodus_filename, this->get_equation_systems(),step+1,time);
-#else
-      std::ostringstream file_name;
-
-      file_name << "out_"
-                << std::setw(3)
-                << std::setfill('0')
-                << std::right
-                << t_step+1
-                << ".gmv";
-
-      GMVIO(mesh).write_equation_systems (file_name.str(), equation_systems);
+  ExodusII_IO exodus_IO(this->get_mesh());
+  exodus_IO.append(true);
+  exodus_IO.write_timestep (exodus_filename, this->get_equation_systems(),step+1,time);
 #endif // #ifdef LIBMESH_HAVE_EXODUS_API
 }

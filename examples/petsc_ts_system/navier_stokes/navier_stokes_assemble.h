@@ -105,23 +105,6 @@ Real boundary_pressure(const Point& pt,
                        const std::string& which_side);
 
 
-
-// ---------------------------------------------------------------------------------------
-// output the velocity u profile at the cross section x = x_pos
-int write_out_section_profile(const libMesh::EquationSystems& es,
-                               const Real x_pos,
-                               const unsigned int y_div,
-                               const unsigned int n_step);
-
-
-// ---------------------------------------------------------------------------------------
-// output the history of velocity u profile at the cross section x = x_pos
-int write_out_section_profile_history(const libMesh::EquationSystems& es,
-                                      const Real x_pos,
-                                      const unsigned int y_div,
-                                      const unsigned int n_step,
-                                      const Real time);
-
 class NSPetscTSSystem : public PetscTSSystem
 {
 public:

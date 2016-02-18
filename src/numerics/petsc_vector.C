@@ -304,7 +304,7 @@ void PetscVector<T>::add (const T v_in)
   this->_restore_array();
 
   PetscErrorCode ierr=0;
-  PetscScalar * values;
+  const PetscScalar * values;
   const PetscScalar v = static_cast<PetscScalar>(v_in);
 
   if(this->type() != GHOSTED)
@@ -314,14 +314,14 @@ void PetscVector<T>::add (const T v_in)
 
       for (PetscInt i=0; i<n; i++)
         {
-          ierr = VecGetArray (_vec, &values);
+          ierr = VecGetArrayRead (_vec, &values);
           LIBMESH_CHKERR(ierr);
 
           PetscInt ig = fli + i;
 
           PetscScalar value = (values[i] + v);
 
-          ierr = VecRestoreArray (_vec, &values);
+          ierr = VecRestoreArrayRead (_vec, &values);
           LIBMESH_CHKERR(ierr);
 
           ierr = VecSetValues (_vec, 1, &ig, &value, INSERT_VALUES);
@@ -342,12 +342,12 @@ void PetscVector<T>::add (const T v_in)
 
       for (PetscInt i=0; i<n; i++)
         {
-          ierr = VecGetArray (loc_vec, &values);
+          ierr = VecGetArrayRead (loc_vec, &values);
           LIBMESH_CHKERR(ierr);
 
           PetscScalar value = (values[i] + v);
 
-          ierr = VecRestoreArray (loc_vec, &values);
+          ierr = VecRestoreArrayRead (loc_vec, &values);
           LIBMESH_CHKERR(ierr);
 
           ierr = VecSetValues (loc_vec, 1, &i, &value, INSERT_VALUES);
@@ -918,12 +918,12 @@ void PetscVector<T>::localize (std::vector<T> & v_local) const
   PetscErrorCode ierr=0;
   const PetscInt n = this->size();
   const PetscInt nl = this->local_size();
-  PetscScalar * values;
+  const PetscScalar * values;
 
   v_local.clear();
   v_local.resize(n, 0.);
 
-  ierr = VecGetArray (_vec, &values);
+  ierr = VecGetArrayRead (_vec, &values);
   LIBMESH_CHKERR(ierr);
 
   numeric_index_type ioff = first_local_index();
@@ -931,7 +931,7 @@ void PetscVector<T>::localize (std::vector<T> & v_local) const
   for (PetscInt i=0; i<nl; i++)
     v_local[i+ioff] = static_cast<T>(values[i]);
 
-  ierr = VecRestoreArray (_vec, &values);
+  ierr = VecRestoreArrayRead (_vec, &values);
   LIBMESH_CHKERR(ierr);
 
   this->comm().sum(v_local);
@@ -951,7 +951,7 @@ void PetscVector<Real>::localize_to_one (std::vector<Real> & v_local,
   PetscErrorCode ierr=0;
   const PetscInt n  = size();
   const PetscInt nl = local_size();
-  PetscScalar * values;
+  const PetscScalar * values;
 
 
   // only one processor
@@ -959,13 +959,13 @@ void PetscVector<Real>::localize_to_one (std::vector<Real> & v_local,
     {
       v_local.resize(n);
 
-      ierr = VecGetArray (_vec, &values);
+      ierr = VecGetArrayRead (_vec, &values);
       LIBMESH_CHKERR(ierr);
 
       for (PetscInt i=0; i<n; i++)
         v_local[i] = static_cast<Real>(values[i]);
 
-      ierr = VecRestoreArray (_vec, &values);
+      ierr = VecRestoreArrayRead (_vec, &values);
       LIBMESH_CHKERR(ierr);
     }
 
@@ -989,13 +989,13 @@ void PetscVector<Real>::localize_to_one (std::vector<Real> & v_local,
             {
               v_local.resize(n);
 
-              ierr = VecGetArray (vout, &values);
+              ierr = VecGetArrayRead (vout, &values);
               LIBMESH_CHKERR(ierr);
 
               for (PetscInt i=0; i<n; i++)
                 v_local[i] = static_cast<Real>(values[i]);
 
-              ierr = VecRestoreArray (vout, &values);
+              ierr = VecRestoreArrayRead (vout, &values);
               LIBMESH_CHKERR(ierr);
             }
 
@@ -1013,13 +1013,13 @@ void PetscVector<Real>::localize_to_one (std::vector<Real> & v_local,
           std::vector<Real> local_values (n, 0.);
 
           {
-            ierr = VecGetArray (_vec, &values);
+            ierr = VecGetArrayRead (_vec, &values);
             LIBMESH_CHKERR(ierr);
 
             for (PetscInt i=0; i<nl; i++)
               local_values[i+ioff] = static_cast<Real>(values[i]);
 
-            ierr = VecRestoreArray (_vec, &values);
+            ierr = VecRestoreArrayRead (_vec, &values);
             LIBMESH_CHKERR(ierr);
           }
 
@@ -1045,7 +1045,7 @@ void PetscVector<Complex>::localize_to_one (std::vector<Complex> & v_local,
   PetscErrorCode ierr=0;
   const PetscInt n  = size();
   const PetscInt nl = local_size();
-  PetscScalar * values;
+  const PetscScalar * values;
 
 
   v_local.resize(n);
@@ -1057,13 +1057,13 @@ void PetscVector<Complex>::localize_to_one (std::vector<Complex> & v_local,
   // only one processor
   if (n == nl)
     {
-      ierr = VecGetArray (_vec, &values);
+      ierr = VecGetArrayRead (_vec, &values);
       LIBMESH_CHKERR(ierr);
 
       for (PetscInt i=0; i<n; i++)
         v_local[i] = static_cast<Complex>(values[i]);
 
-      ierr = VecRestoreArray (_vec, &values);
+      ierr = VecRestoreArrayRead (_vec, &values);
       LIBMESH_CHKERR(ierr);
     }
 
@@ -1079,7 +1079,7 @@ void PetscVector<Complex>::localize_to_one (std::vector<Complex> & v_local,
       std::vector<Real> imag_local_values(n, 0.);
 
       {
-        ierr = VecGetArray (_vec, &values);
+        ierr = VecGetArrayRead (_vec, &values);
         LIBMESH_CHKERR(ierr);
 
         // provide my local share to the real and imag buffers
@@ -1089,7 +1089,7 @@ void PetscVector<Complex>::localize_to_one (std::vector<Complex> & v_local,
             imag_local_values[i+ioff] = static_cast<Complex>(values[i]).imag();
           }
 
-        ierr = VecRestoreArray (_vec, &values);
+        ierr = VecRestoreArrayRead (_vec, &values);
         LIBMESH_CHKERR(ierr);
       }
 
