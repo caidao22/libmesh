@@ -24,7 +24,7 @@
 #include "libmesh/boundary_info.h"
 //#include "libmesh/quadrature_gauss.h"
 #include "libmesh/exodusII_io.h"
-
+#include "libmesh/gmv_io.h"
 // For systems of equations the DenseSubMatrix and DenseSubVector provide convenient ways
 // for assembling the element matrix and vector on a component-by-component basis.
 #include "libmesh/sparse_matrix.h"
@@ -1008,6 +1008,7 @@ void NSPetscTSSystem::monitor (int  step, Real time,
                              NumericVector<Number>& X)
 {
   // do nothing
+  /*
 #ifdef LIBMESH_HAVE_EXODUS_API
 //  // We write the file in the ExodusII format.
 //    std::ostringstream file_name;
@@ -1030,4 +1031,17 @@ void NSPetscTSSystem::monitor (int  step, Real time,
   exodus_IO.append(true);
   exodus_IO.write_timestep (exodus_filename, this->get_equation_systems(),step+1,time);
 #endif // #ifdef LIBMESH_HAVE_EXODUS_API
+*/
+  if (step==0)
+    GMVIO(this->get_mesh()).write_equation_systems("ns_out_000.gmv",
+                                                  this->get_equation_systems());
+  std::ostringstream GMVIO_filename;
+  GMVIO_filename << "ns_out_"
+                  << std::setw(3)
+                  << std::setfill('0')
+                  << std::right
+                  << step + 1
+                  << ".gmv";
+
+  GMVIO(this->get_mesh()).write_equation_systems (GMVIO_filename.str(), this->get_equation_systems());
 }
