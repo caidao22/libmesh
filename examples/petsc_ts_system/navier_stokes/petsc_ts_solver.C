@@ -28,8 +28,8 @@
 // C++ includes
 
 // Local Includes
-#include "libmesh/petsc_ts_system.h"
-#include "libmesh/petsc_ts_solver.h"
+#include "petsc_ts_system.h"
+#include "petsc_ts_solver.h"
 
 namespace libMesh
 {

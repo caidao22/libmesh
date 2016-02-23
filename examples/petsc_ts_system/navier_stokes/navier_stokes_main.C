@@ -63,8 +63,8 @@
 //#include "libmesh/dense_vector.h"
 
 #include "navier_stokes_assemble.h"
-#include "libmesh/petsc_ts_system.h"
-#include "libmesh/petsc_ts_solver.h"
+#include "petsc_ts_system.h"
+#include "petsc_ts_solver.h"
 
 // Bring in everything from the libMesh namespace
 using namespace libMesh;

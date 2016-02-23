@@ -35,7 +35,7 @@
 #include "libmesh/dense_subvector.h"
 
 // include the header file
-#include "libmesh/petsc_ts_system.h"
+#include "petsc_ts_system.h"
 #include "navier_stokes_assemble.h"
 #include "GeomTools.h"
 
@@ -1007,8 +1007,6 @@ void NSPetscTSSystem::IJacobian (Real time,
 void NSPetscTSSystem::monitor (int  step, Real time,
                              NumericVector<Number>& X)
 {
-  // do nothing
-  /*
 #ifdef LIBMESH_HAVE_EXODUS_API
 //  // We write the file in the ExodusII format.
 //    std::ostringstream file_name;
@@ -1031,7 +1029,7 @@ void NSPetscTSSystem::monitor (int  step, Real time,
   exodus_IO.append(true);
   exodus_IO.write_timestep (exodus_filename, this->get_equation_systems(),step+1,time);
 #endif // #ifdef LIBMESH_HAVE_EXODUS_API
-*/
+/*
   if (step==0)
     GMVIO(this->get_mesh()).write_equation_systems("ns_out_000.gmv",
                                                   this->get_equation_systems());
@@ -1044,4 +1042,5 @@ void NSPetscTSSystem::monitor (int  step, Real time,
                   << ".gmv";
 
   GMVIO(this->get_mesh()).write_equation_systems (GMVIO_filename.str(), this->get_equation_systems());
+*/
 }
