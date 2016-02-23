@@ -5,7 +5,7 @@
 
 // Local Includes
 #include "libmesh/nonlinear_implicit_system.h"
-#include "libmesh/petsc_ts_solver.h"
+#include "petsc_ts_solver.h"
 
 // C++ includes
 

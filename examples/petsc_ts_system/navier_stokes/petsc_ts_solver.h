@@ -29,7 +29,7 @@
 #include "libmesh/libmesh_common.h"
 #include "libmesh/reference_counted_object.h"
 #include "libmesh/parallel_object.h"
-#include "libmesh/petsc_ts_system.h"
+#include "petsc_ts_system.h"
 
 // PETSc includes
 // This only works with petsc-3.3 and above.

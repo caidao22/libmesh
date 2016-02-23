@@ -565,7 +565,7 @@ SUBDIRS = libmesh
 # cleaned by 'make distclean'
 DISTCLEANFILES = libmesh_config.h
 
-# Do not edit - automatically generated from rebuild_include_HEADERS.sh
+# Do not edit - automatically generated from ./rebuild_include_HEADERS.sh
 # These are headers we need to compile the libMesh library but should
 # not be installed.  These header files may have implementation
 # details which are not required for the public interface
@@ -915,7 +915,6 @@ include_HEADERS = \
         solvers/petsc_diff_solver.h \
         solvers/petsc_linear_solver.h \
         solvers/petsc_nonlinear_solver.h \
-        solvers/petsc_ts_solver.h \
         solvers/petscdmlibmesh.h \
         solvers/second_order_unsteady_solver.h \
         solvers/slepc_eigen_solver.h \
@@ -951,7 +950,6 @@ include_HEADERS = \
         systems/parameter_multipointer.h \
         systems/parameter_pointer.h \
         systems/parameter_vector.h \
-        systems/petsc_ts_system.h \
         systems/qoi_set.h \
         systems/sensitivity_data.h \
         systems/steady_system.h \

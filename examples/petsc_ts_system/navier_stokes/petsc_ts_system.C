@@ -5,7 +5,7 @@
 #include "libmesh/numeric_vector.h"
 #include "libmesh/dof_map.h"
 
-#include "libmesh/petsc_ts_system.h"
+#include "petsc_ts_system.h"
 //#include "navier_stokes_assemble.h"
 
 namespace libMesh

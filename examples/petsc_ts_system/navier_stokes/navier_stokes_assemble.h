@@ -24,7 +24,7 @@
 #include "libmesh/quadrature_gauss.h"
 #include "libmesh/equation_systems.h"
 #include "libmesh/point.h"
-#include "libmesh/petsc_ts_system.h"
+#include "petsc_ts_system.h"
 
 // Bring in everything from the libMesh namespace
 using namespace libMesh;

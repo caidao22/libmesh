@@ -1,7 +1,7 @@
 ######################################################################
 #
 # Template libMesh application Makefile
-LIBMESH_DIR ?= /Users/hongzhang/Projects/libmesh/
+LIBMESH_DIR ?= /home/hong/Software/libmesh/
 
 # include the library options determined by configure
 include $(LIBMESH_DIR)/Make.common
