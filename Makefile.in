@@ -4719,7 +4719,7 @@ DISTCLEANFILES = \
 	   a.out  # intel-14.0 seems to leave an a.out from configure with mpich, clean that up for distclean
 
 
-# Do not edit - automatically generated from ./rebuild_libmesh_SOURCES.sh
+# Do not edit - automatically generated from rebuild_libmesh_SOURCES.sh
 libmesh_SOURCES = \
         src/base/dof_map.C \
         src/base/dof_map_constraints.C \

@@ -103,10 +103,7 @@ to buffer accesses), and
 \fBNC_LOCK\fR
 (not yet implemented).
 .sp
-As of NetCDF version 4.1, and if TRUE support was enabled
-when the NetCDF library was built, the path parameter
-may specify a TRUE URL. In this case, the access mode is
-forced to be read-only.
+
 .HP
 \fBint nc__open(const char \fIpath\fP[], int \fImode\fP, size_t* \fIchunksize\fP, int* \fIncid\fP)\fR
 .sp
@@ -131,8 +128,7 @@ chunksize to 8192.
 The chunksize is a property of a given open netcdf descriptor
 \fIncid\fP, it is not a persistent property of the netcdf dataset.
 .sp
-As with \fBnc__open(\|)\fR, the path parameter
-may specify a TRUE URL, but the tuning parameters are ignored.
+
 .HP
 \fBint nc_redef(int \fIncid\fP)\fR
 .sp
@@ -1298,7 +1294,22 @@ to enable prefilling (the
 default) or \fBNC_NOFILL\fR
 to disable prefilling.
 This function returns the previous setting in \fIold_fillmode\fP.
-
+.SH "PARALLEL I/O"
+.LP
+.HP
+\fBint nc_create_par(const char \fIpath\fP[], int \fIcmode\fP, MPI_Comm comm, MPI_Info info, int* \fIncid\fP)\fR
+.sp
+Like \fBnc_create(\|)\fR but creates for parallel I/O access. The mode must specify a 
+netCDF-4/HDF5 dataset.
+.sp
+.HP
+\fBint nc_open_par(const char \fIpath\fP[], int \fImode\fP, MPI_Comm comm, MPI_Info info, int* \fIncid\fP)\fR
+.sp
+Opens for parallel I/O access. Must be a netCDF-4/HDF5 dataset.
+.HP
+\fBint nc_var_par_access(int \fIncid\fP, \fIvarid\fP, int \fIpar_access\fP)\fR
+.sp
+May be used to change access to a variable from independent to collective data access.
 .HP
 .SH "MPP FUNCTION DESCRIPTIONS"
 .LP
