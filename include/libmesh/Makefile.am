@@ -666,8 +666,6 @@ BUILT_SOURCES = \
         petsc_nonlinear_solver.h \
         petsc_preconditioner.h \
         petsc_solver_exception.h \
-        petsc_ts_solver.h \
-        petsc_ts_system.h \
         petsc_vector.h \
         petscdmlibmesh.h \
         plane.h \
@@ -859,7 +857,6 @@ BUILT_SOURCES = \
         xdr_shead.h \
         xdr_soln.h \
         netcdf.h \
-        netcdf_par.h \
         analytic_function.h \
         composite_fem_function.h \
         composite_function.h \
@@ -3225,12 +3222,6 @@ petsc_preconditioner.h: $(top_srcdir)/include/libmesh/petsc_preconditioner.h
 petsc_solver_exception.h: $(top_srcdir)/include/libmesh/petsc_solver_exception.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
-petsc_ts_solver.h: $(top_srcdir)/include/libmesh/petsc_ts_solver.h
-	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
-
-petsc_ts_system.h: $(top_srcdir)/include/libmesh/petsc_ts_system.h
-	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
-
 petsc_vector.h: $(top_srcdir)/include/libmesh/petsc_vector.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
@@ -3802,9 +3793,6 @@ xdr_soln.h: $(top_srcdir)/include/mesh/xdr_soln.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 netcdf.h: $(top_srcdir)/include/netcdf.h
-	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
-
-netcdf_par.h: $(top_srcdir)/include/netcdf_par.h
 	$(AM_V_GEN)rm -f $@ && $(LN_S) -f $< $@
 
 analytic_function.h: $(top_srcdir)/include/numerics/analytic_function.h
