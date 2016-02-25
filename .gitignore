@@ -226,3 +226,4 @@ single
 trilinos_only
 xcode
 installed
+/Debug/
