@@ -15,8 +15,6 @@
 // License along with this library; if not, write to the Free Software
 // Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-
-
 #include "libmesh/libmesh_common.h"
 #include "libmesh/petsc_matrix.h"  // for PetscMatrix
 #include "libmesh/petsc_vector.h"
@@ -34,40 +32,36 @@
 namespace libMesh
 {
 
-//--------------------------------------------------------------------
 // Functions with C linkage to pass to PETSc.  PETSc will call these
 // methods as needed.
 //
 // Since they must have C linkage they have no knowledge of a namespace.
 // Give them an obscure name to avoid namespace pollution.
-  
 extern "C"
 {
 
-  //-------------------------------------------------------------------
   // this function is called by PETSc at the end of each step
   PetscErrorCode
   __libmesh_petsc_ts_monitor (TS ts, PetscInt step, PetscReal time, Vec x, void *ctx)
   {
     START_LOG("Monitor()", "PetscTSSolver");
-    
+
     libmesh_assert(x); // make sure x is non-NULL
-    
+
     // No way to safety-check this cast, since we got a void*...
     PetscTSSystem *tssys = (PetscTSSystem *)ctx;
-    
+
     // Wrap PETSc Vec as a libMesh::PetscVector<Number> .
     PetscVector<Number> X (x,tssys->comm());
-    
+
     // Call the monitor on the PetscVector X, along with the other arguments.
     tssys->monitor(step,time,X);
-    
+
     STOP_LOG("Monitor()", "PetscTSSolver");
     return 0;
   }
 
   /*
-  //---------------------------------------------------------------
   // this function is called by TS to evaluate the rhs function at X
   PetscErrorCode
   __libmesh_petsc_ts_rhsfunction (TS ts, PetscReal time, Vec x, Vec r, void *ctx)
@@ -89,8 +83,6 @@ extern "C"
     return 0;
   }
 
-
-  //---------------------------------------------------------------
   // this function is called by PETSc to evaluate the RHS Jacobian at X ant time t
   PetscErrorCode
   __libmesh_petsc_ts_rhsjacobian(TS ts, PetscReal time, Vec x, Mat jac, Mat jacpre, void *ctx)
@@ -117,7 +109,6 @@ extern "C"
   }
   */
   
-  //---------------------------------------------------------------
   PetscErrorCode
   __libmesh_petsc_ts_ifunction (TS ts, PetscReal time, Vec x, Vec xdot, Vec f, void *ctx)
   {
@@ -154,7 +145,6 @@ extern "C"
     return ierr;
   }
   
-
   //---------------------------------------------------------------
   PetscErrorCode
   __libmesh_petsc_ts_ijacobian (TS ts, PetscReal time, Vec x, Vec xdot, PetscReal shift,Mat ijac, Mat ijacpre, void *ctx)
@@ -193,11 +183,8 @@ extern "C"
   }
 
 } // end extern "C"
-//---------------------------------------------------------------------
 
 
-
-//---------------------------------------------------------------------
 // PetscTSSolver methods
 template <typename T>
 PetscTSSolver<T>::PetscTSSolver (sys_type& tssys, const char* name) :
@@ -218,7 +205,6 @@ PetscTSSolver<T>::PetscTSSolver (sys_type& tssys, const char* name) :
 }
 
 
-//---------------------------------------------------------------------
 template <typename T>
 PetscTSSolver<T>::~PetscTSSolver ()
 {
@@ -226,7 +212,6 @@ PetscTSSolver<T>::~PetscTSSolver ()
 }
   
   
-//------------------------------------------------------------------
 // PetscTSSolver members
 #if defined(LIBMESH_HAVE_PETSC)
 template <typename T>
@@ -245,8 +230,6 @@ UniquePtr<PetscTSSolver<T> > PetscTSSolver<T>::build(sys_type& s)
 #endif
 
 
-
-//---------------------------------------------------------------------
 template <typename T>
 void PetscTSSolver<T>::clear ()
 {
@@ -255,8 +238,7 @@ void PetscTSSolver<T>::clear ()
     this->_initialized = false;
     
     PetscErrorCode ierr = 0;
-    ierr = TSDestroy(&_ts);   CHKERRABORT(this->comm().get(),ierr);
-
+    ierr = TSDestroy(&_ts);   LIBMESH_CHKERR(ierr);
     delete _name;
 //    delete _R;
 //    delete _J;
@@ -275,7 +257,6 @@ void PetscTSSolver<T>::clear ()
 }
 
 
-//---------------------------------------------------------------------
 template <typename T>
 void PetscTSSolver<T>::init ()
 {
@@ -289,27 +270,28 @@ void PetscTSSolver<T>::init ()
     PetscErrorCode ierr = 0;
 
     // Create TS
-    ierr = TSCreate(this->comm().get(),&_ts);     CHKERRABORT(this->comm().get(),ierr);
-    ierr = TSSetProblemType(_ts,TS_NONLINEAR);    CHKERRABORT(this->comm().get(),ierr);
+    ierr = TSCreate(this->comm().get(), &_ts); LIBMESH_CHKERR(ierr);
+    //ierr = TSSetProblemType(_ts, TS_NONLINEAR); LIBMESH_CHKERR(ierr);
     //PetscPrintf(this->comm().get(),"************* --- Petsc TS is created ...... \n");
     
     // Attaching a DM to TS.
-//    DM dm;
-//    ierr = DMCreate(this->comm().get(), &dm);     CHKERRABORT(this->comm().get(),ierr);
-//    ierr = DMSetType(dm,DMLIBMESH);               CHKERRABORT(this->comm().get(),ierr);
-//    ierr = DMlibMeshSetSystem(dm,this->system()); CHKERRABORT(this->comm().get(),ierr);
+    DM dm;
+    ierr = DMCreate(this->comm().get(), &dm); LIBMESH_CHKERR(ierr);
+    ierr = DMSetType(dm,DMLIBMESH); LIBMESH_CHKERR(ierr);
+    ierr = DMlibMeshSetSystem(dm,this->system()); LIBMESH_CHKERR(ierr);
 
     if (_name)
     {
       std::string prefix = std::string(_name)+std::string("_");
-      ierr = TSSetOptionsPrefix(_ts, prefix.c_str()); CHKERRABORT(this->comm().get(),ierr);
-//      ierr = DMSetOptionsPrefix(dm,_name);            CHKERRABORT(this->comm().get(),ierr);
+      ierr = TSSetOptionsPrefix(_ts, prefix.c_str()); LIBMESH_CHKERR(ierr);
+      ierr = DMSetOptionsPrefix(dm, _name); LIBMESH_CHKERR(ierr);
     }
-    ierr = TSMonitorSet(_ts, __libmesh_petsc_ts_monitor,&this->system(),NULL); CHKERRABORT(this->comm().get(),ierr);
-//    ierr = DMSetFromOptions(dm);               CHKERRABORT(this->comm().get(),ierr);
-//    ierr = DMSetUp(dm);                        CHKERRABORT(this->comm().get(),ierr);
-//    ierr = TSSetDM(this->_ts, dm);             CHKERRABORT(this->comm().get(),ierr);
-//    ierr = DMDestroy(&dm);                     CHKERRABORT(this->comm().get(),ierr);
+    ierr = DMSetFromOptions(dm); LIBMESH_CHKERR(ierr);
+    ierr = DMSetUp(dm); LIBMESH_CHKERR(ierr);
+    ierr = TSSetDM(this->_ts, dm); LIBMESH_CHKERR(ierr);
+    // TS now owns the reference to dm
+	ierr = DMDestroy(&dm); LIBMESH_CHKERR(ierr);
+    ierr = TSMonitorSet(_ts, __libmesh_petsc_ts_monitor, &this->system(), NULL); LIBMESH_CHKERR(ierr);
     //PetscPrintf(this->comm().get(),"************* --- Petsc TS monitor is set ...... \n");
     
     // Build the vector and matrices
@@ -323,8 +305,7 @@ void PetscTSSolver<T>::init ()
 //    PetscPrintf(this->comm().get(),"************* --- Petsc TS SparseMatix/Vector are created ...... \n");
 
     // Set the IFunction
-    ierr = TSSetIFunction(_ts,NULL,__libmesh_petsc_ts_ifunction,&this->system());
-    CHKERRABORT(this->comm().get(),ierr);
+    ierr = TSSetIFunction(_ts, NULL, __libmesh_petsc_ts_ifunction, &this->system()); LIBMESH_CHKERR(ierr);
     //PetscPrintf(this->comm().get(),"************* --- Petsc TS TSSetIFunction are completed ...... \n");
     
     // Set the IJacobian
@@ -334,20 +315,18 @@ void PetscTSSolver<T>::init ()
       PetscPrintf(this->comm().get(),"************* --- Preconditioner matrix has been found! ...... \n");
       this->system().request_matrix("Preconditioner")->close();
       PetscMatrix<Number>& PC_sys = *cast_ptr<PetscMatrix<Number>*>( this->system().request_matrix("Preconditioner") );
-      ierr = TSSetIJacobian(_ts,Jac_sys.mat(),PC_sys.mat(),__libmesh_petsc_ts_ijacobian,&this->system());
+      ierr = TSSetIJacobian(_ts,Jac_sys.mat(),PC_sys.mat(),__libmesh_petsc_ts_ijacobian,&this->system()); LIBMESH_CHKERR(ierr);
     }
     else
-      ierr = TSSetIJacobian(_ts,Jac_sys.mat(),Jac_sys.mat(),__libmesh_petsc_ts_ijacobian,&this->system());
-    // end if-else
-    CHKERRABORT(this->comm().get(),ierr);
+      ierr = TSSetIJacobian(_ts,Jac_sys.mat(),Jac_sys.mat(),__libmesh_petsc_ts_ijacobian,&this->system()); LIBMESH_CHKERR(ierr);
     //PetscPrintf(this->comm().get(),"************* --- Petsc TS TSSetIJacobian are completed ...... \n");
 
     // solution of the system
     PetscVector<Number>& X_sys = *cast_ptr<PetscVector<Number>*>(_system.solution.get());
-    ierr = TSSetDuration(_ts, _max_steps, _max_time);   CHKERRABORT(this->comm().get(),ierr);
-    ierr = TSSetSolution(_ts,X_sys.vec());              CHKERRABORT(this->comm().get(),ierr);
-    ierr = TSSetInitialTimeStep(_ts,_initial_time,_dt); CHKERRABORT(this->comm().get(),ierr);
-    ierr = TSSetFromOptions(_ts);                       CHKERRABORT(this->comm().get(),ierr);
+    ierr = TSSetDuration(_ts, _max_steps, _max_time); LIBMESH_CHKERR(ierr);
+    ierr = TSSetSolution(_ts,X_sys.vec()); LIBMESH_CHKERR(ierr);
+    ierr = TSSetInitialTimeStep(_ts, _initial_time, _dt); LIBMESH_CHKERR(ierr);
+    ierr = TSSetFromOptions(_ts); LIBMESH_CHKERR(ierr);
     //PetscPrintf(this->comm().get(),"************* --- Petsc TSSetFromOptions are completed ...... \n");
     
   } // end if
@@ -364,36 +343,20 @@ void PetscTSSolver<T>::solve ()
   START_LOG("solve()", "PetscTSSolver");
   PetscErrorCode ierr=0;
   
-  // Attaching a DM to TS.
-//  DM dm;
-//  ierr = DMCreate(this->comm().get(), &dm);     CHKERRABORT(this->comm().get(),ierr);
-//  ierr = DMSetType(dm,DMLIBMESH);               CHKERRABORT(this->comm().get(),ierr);
-//  ierr = DMlibMeshSetSystem(dm,this->system()); CHKERRABORT(this->comm().get(),ierr);
-//  if (_name)
-//  {
-//    ierr = DMSetOptionsPrefix(dm,_name);        CHKERRABORT(this->comm().get(),ierr);
-//  }
-//  ierr = DMSetFromOptions(dm);               CHKERRABORT(this->comm().get(),ierr);
-//  ierr = DMSetUp(dm);                        CHKERRABORT(this->comm().get(),ierr);
-//  ierr = TSSetDM(this->_ts, dm);             CHKERRABORT(this->comm().get(),ierr);
-  
-  
   // Set the solution
   PetscVector<Number>* PETScX  = cast_ptr<PetscVector<Number>*>(_system.solution.get());
-  ierr = TSSolve (_ts,PETScX->vec());     CHKERRABORT(this->comm().get(),ierr);
+  ierr = TSSolve (_ts,PETScX->vec()); LIBMESH_CHKERR(ierr);
 
   // Get and store the reason for convergence
   PetscReal         ftime;
   PetscInt          nsteps;
-  ierr = TSGetSolveTime(_ts,&ftime);      CHKERRABORT(this->comm().get(),ierr);
-  ierr = TSGetTimeStepNumber(_ts,&nsteps);CHKERRABORT(this->comm().get(),ierr);
-  TSGetConvergedReason(_ts, &_reason);    CHKERRABORT(this->comm().get(),ierr);
+  ierr = TSGetSolveTime(_ts,&ftime);      LIBMESH_CHKERR(ierr);
+  ierr = TSGetTimeStepNumber(_ts,&nsteps);LIBMESH_CHKERR(ierr);
+  TSGetConvergedReason(_ts, &_reason);    LIBMESH_CHKERR(ierr);
   
   PetscPrintf(this->comm().get(),"************* %s at time %g after %D steps\n",
               TSConvergedReasons[_reason], (double)ftime, nsteps);
 
-  ierr = TSDestroy(&_ts);        CHKERRABORT(this->comm().get(),ierr);
-  //ierr = DMDestroy(&dm);                     CHKERRABORT(this->comm().get(),ierr);
   STOP_LOG("solve()", "PetscTSSolver");
   
   this->system().update();
@@ -409,7 +372,7 @@ void PetscTSSolver<T>::solve ()
 //  if (this->_initialized)
 //    {
 //      ierr = TSGetConvergedReason(_ts, &_reason);
-//      CHKERRABORT(this->comm().get(),ierr);
+//      LIBMESH_CHKERR(ierr);
 //    }
 //
 //  return _reason;

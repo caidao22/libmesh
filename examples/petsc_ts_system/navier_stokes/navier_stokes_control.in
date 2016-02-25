@@ -44,9 +44,9 @@ ZA = -50
 ZB = +50
 
 # coarse mesh for debug purpose
-#nx_mesh = 20
-#ny_mesh = 4
-#nz_mesh = 20
+nx_mesh = 20
+ny_mesh = 4
+nz_mesh = 20
 
 # finer mesh for test purpose
 #nx_mesh = 50
@@ -55,6 +55,6 @@ ZB = +50
 
 
 # fine mesh for simulation
-nx_mesh = 150
-ny_mesh = 30
-nz_mesh = 150
+#nx_mesh = 150
+#ny_mesh = 30
+#nz_mesh = 150

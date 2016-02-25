@@ -71,6 +71,11 @@ void assemble_ifunction (libMesh::EquationSystems& es,
                          const NumericVector<Number>& X,
                          const NumericVector<Number>& Xdot)
 {
+  PetscMPIInt rank,size;
+  MPI_Comm_size(PETSC_COMM_WORLD,&size);
+  MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
+
+  std::cout<<"assemble ifunction"<<std::endl;
   // It is a good idea to make sure we are assembling the proper system.
   libmesh_assert_equal_to (system_name, "Navier-Stokes");
   
@@ -148,6 +153,7 @@ void assemble_ifunction (libMesh::EquationSystems& es,
   // loop over all the elements in the mesh that live on the local processor.
   MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
   const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
+  std::cout<<rank<<"enter loop"<<std::endl;
   for ( ; el != end_el; ++el)
   {
     // Store a pointer to the element we are currently working on.
@@ -252,6 +258,7 @@ void assemble_ifunction (libMesh::EquationSystems& es,
       Vw.reposition (w_var*n_u_dofs, n_w_dofs);
       Vwdot.reposition (w_var*n_u_dofs, n_w_dofs);
     } // end if (dim==3)
+    std::cout<<rank<<"1"<<std::endl;
     
     
     // First we need nodal values of u, v, w, p in this element
@@ -271,6 +278,7 @@ void assemble_ifunction (libMesh::EquationSystems& es,
     if (dim==3) Xdot.get (dof_indices_w, elem_wdot);
     
     
+    std::cout<<rank<<"2"<<std::endl;
     // set the DenseVector Ve and Vedot using std::vector
     for (unsigned int i=0; i<n_u_dofs; i++)
     {
@@ -339,6 +347,7 @@ void assemble_ifunction (libMesh::EquationSystems& es,
     
     } // end of the quadrature point qp-loop
     
+    std::cout<<rank<<"3"<<std::endl;
     // compuate the rhs vector caused by the pressure jump
     compute_element_rhs(mesh, elem, n_u_dofs, n_p_dofs, *fe_vel, *fe_pres,
                         periodicity, time, Fu,Fv,Fw,Fp);
@@ -350,6 +359,7 @@ void assemble_ifunction (libMesh::EquationSystems& es,
     apply_bc_by_penalty(mesh, elem, time,"both", Kuu, Kvv, Kww, Kpp, Fu, Fv, Fw, Fp);
     //apply_bc_by_penalty(mesh, elem, time,"matrix", Muu, Mvv, Mww, Mpp, Fu, Fv, Fw, Fp);
     
+    std::cout<<rank<<"4"<<std::endl;
     // Now we have element-wise quantities: Me, Ke, Fe, then we can
     // compute the element ifunction
     for (unsigned int i=0; i<n_dofs; i++)
@@ -1007,6 +1017,7 @@ void NSPetscTSSystem::IJacobian (Real time,
 void NSPetscTSSystem::monitor (int  step, Real time,
                              NumericVector<Number>& X)
 {
+/*
 #ifdef LIBMESH_HAVE_EXODUS_API
 //  // We write the file in the ExodusII format.
 //    std::ostringstream file_name;
@@ -1020,7 +1031,7 @@ void NSPetscTSSystem::monitor (int  step, Real time,
 //                                                          this->get_equation_systems());
 
   // write out the equation systems
-  std::string exodus_filename = "ns_system.e";
+  std::string exodus_filename("ns_system.e");
   if ( step==0 )
     ExodusII_IO(this->get_mesh()).write_equation_systems (exodus_filename,
                                                           this->get_equation_systems());
@@ -1029,7 +1040,7 @@ void NSPetscTSSystem::monitor (int  step, Real time,
   exodus_IO.append(true);
   exodus_IO.write_timestep (exodus_filename, this->get_equation_systems(),step+1,time);
 #endif // #ifdef LIBMESH_HAVE_EXODUS_API
-/*
+
   if (step==0)
     GMVIO(this->get_mesh()).write_equation_systems("ns_out_000.gmv",
                                                   this->get_equation_systems());
