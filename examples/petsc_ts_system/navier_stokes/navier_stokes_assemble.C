@@ -75,7 +75,6 @@ void assemble_ifunction (libMesh::EquationSystems& es,
   MPI_Comm_size(PETSC_COMM_WORLD,&size);
   MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
 
-  std::cout<<"assemble ifunction"<<std::endl;
   // It is a good idea to make sure we are assembling the proper system.
   libmesh_assert_equal_to (system_name, "Navier-Stokes");
   
@@ -153,20 +152,33 @@ void assemble_ifunction (libMesh::EquationSystems& es,
   // loop over all the elements in the mesh that live on the local processor.
   MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
   const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
-  std::cout<<rank<<"enter loop"<<std::endl;
+
+  printf("rank=%d loop starts, el=%u \n",rank,(*el)->id());
+
   for ( ; el != end_el; ++el)
   {
     // Store a pointer to the element we are currently working on.
     const Elem* elem = *el;
-//    printf("************* assemble_ifunction in element %u/%u \n",
-//           elem->id(), mesh.n_elem() );
-    
+    printf("************* [%d] assemble_ifunction in element %u/%u \n",rank, elem->id(), mesh.n_elem() );
+
     // Get the degree of freedom indices for the current element.
     dof_map.dof_indices (elem, dof_indices);
+    if (rank==1) {
+    for (auto i = dof_indices.begin(); i != dof_indices.end(); ++i) printf("%u ",*i);printf("\n");}
     dof_map.dof_indices (elem, dof_indices_u, u_var);
+    //    if (rank==1) {
+    //for (auto i = dof_indices_u.begin(); i != dof_indices_u.end(); ++i) printf("%u ",*i);printf("\n");}
     dof_map.dof_indices (elem, dof_indices_v, v_var);
+    //    if (rank==1) {
+    //for (auto i = dof_indices_v.begin(); i != dof_indices_v.end(); ++i) printf("%u ",*i);printf("\n");}
     dof_map.dof_indices (elem, dof_indices_p, p_var);
-    
+    //    if (rank==1) {
+    //for (auto i = dof_indices_p.begin(); i != dof_indices_p.end(); ++i) printf("%u ",*i);printf("\n");}
+
+    if(rank==0) {
+      printf("rank[0] ");
+      for (auto i = dof_indices.begin(); i != dof_indices.end(); ++i) printf("%u ",*i);printf("\n");
+    }
     const unsigned int n_dofs   = dof_indices.size();
     const unsigned int n_u_dofs = dof_indices_u.size();
     const unsigned int n_v_dofs = dof_indices_v.size();
@@ -177,19 +189,19 @@ void assemble_ifunction (libMesh::EquationSystems& es,
       dof_map.dof_indices (elem, dof_indices_w, w_var);
       n_w_dofs = dof_indices_w.size();
     }
-    
+
     // Compute the element-specific data for the current element.
     // This involves computing the location of the quadrature points
     // and the shape functions (phi, dphi) for the current element.
     fe_vel->reinit  (elem);
     fe_pres->reinit (elem);
-    
+
     // Zero the element matrix and right-hand side before summing them.
     Me.resize (n_dofs, n_dofs);
     Ke.resize (n_dofs, n_dofs);
     Fe.resize (n_dofs);
     Ve.resize (n_dofs);   Vedot.resize (n_dofs);
-    
+
     // Reposition the submatrices...  The idea is this:
     //         -           -          -  -
     //        | Kuu Kuv Kup |        | Fu |
@@ -233,7 +245,7 @@ void assemble_ifunction (libMesh::EquationSystems& es,
     Vudot.reposition (u_var*n_u_dofs, n_u_dofs);
     Vvdot.reposition (v_var*n_u_dofs, n_v_dofs);
     Vpdot.reposition (p_var*n_u_dofs, n_p_dofs);
-    
+
     if(dim==3)
     {
       Muw.reposition (u_var*n_u_dofs, w_var*n_u_dofs, n_u_dofs, n_w_dofs);  // 0 matrix
@@ -258,15 +270,15 @@ void assemble_ifunction (libMesh::EquationSystems& es,
       Vw.reposition (w_var*n_u_dofs, n_w_dofs);
       Vwdot.reposition (w_var*n_u_dofs, n_w_dofs);
     } // end if (dim==3)
-    std::cout<<rank<<"1"<<std::endl;
     
-    
+    if (rank==1) printf("1\n");
     // First we need nodal values of u, v, w, p in this element
     // navier_stokes_system.solution->get (dof_indices_u, elem_u);
     std::vector<Real> elem_u, elem_v, elem_w, elem_p;
-    X.get (dof_indices_u, elem_u);
-    X.get (dof_indices_v, elem_v);
-    X.get (dof_indices_p, elem_p);
+    X.get (dof_indices_u, elem_u);if (rank==1) printf("2\n");
+    X.get (dof_indices_v, elem_v);if (rank==1) printf("3\n");
+    X.get (dof_indices_p, elem_p);if (rank==1) printf("4\n");
+
     if (dim==3) X.get (dof_indices_w, elem_w);
     
     
@@ -277,8 +289,6 @@ void assemble_ifunction (libMesh::EquationSystems& es,
     Xdot.get (dof_indices_p, elem_pdot);
     if (dim==3) Xdot.get (dof_indices_w, elem_wdot);
     
-    
-    std::cout<<rank<<"2"<<std::endl;
     // set the DenseVector Ve and Vedot using std::vector
     for (unsigned int i=0; i<n_u_dofs; i++)
     {
@@ -288,14 +298,13 @@ void assemble_ifunction (libMesh::EquationSystems& es,
     }
     for (unsigned int i=0; i<n_p_dofs; i++)
     {  Vp(i) = elem_p[i];  Vpdot(i) = elem_pdot[i]; }
-    
     // Loop over each Gauss point and compute element matices and vectors
     for (unsigned int qp=0; qp<qrule.n_points(); qp++)
     {
       // Note that Fe = Fe_v + Fe_s
       // the part of volume integral Fe_v is zero, and only surface
       // integral exists due to the boundary traction.
-      
+
       // First we need evaluate the value of velocity at the gauss pt
       Number   u = 0.,   v = 0.,  w = 0. ;
       for (unsigned int l=0; l<n_u_dofs; l++)
@@ -307,7 +316,7 @@ void assemble_ifunction (libMesh::EquationSystems& es,
       }
       const NumberVectorValue U     (u, v, w);  // velocity vector
       //printf("************* assemble_ifunction: (u,v,w) = (%f, %f, %f ),\n",u,v,w);
-      
+
       // Matrix contributions for the uu and vv couplings.
       for (unsigned int i=0; i<n_u_dofs; i++)
       {
@@ -317,19 +326,19 @@ void assemble_ifunction (libMesh::EquationSystems& es,
           Muu(i,j) += JxW[qp]*phi[i][qp]*phi[j][qp];
           Mvv(i,j) += JxW[qp]*phi[i][qp]*phi[j][qp];
           if (dim==3) Mww(i,j) += JxW[qp]*phi[i][qp]*phi[j][qp];
-          
+
           // convection and diffusion matrix
           Kuu(i,j) += JxW[qp]*(dphi[i][qp]*dphi[j][qp]*mu +     // diffusion term
                                phi[i][qp]*(U*dphi[j][qp]) );    // convection term
-          
+
           Kvv(i,j) += JxW[qp]*(dphi[i][qp]*dphi[j][qp]*mu +     // diffusion term
                                phi[i][qp]*(U*dphi[j][qp]) );    // convection term
-          
+
           if (dim ==3)
             Kww(i,j) += JxW[qp]*(dphi[i][qp]*dphi[j][qp]*mu +   // diffusion term
                                  phi[i][qp]*(U*dphi[j][qp]) );  // convection term
         } // end for j-loop
-        
+
         // Matrix contributions for the up and vp couplings.
         for (unsigned int j=0; j<n_p_dofs; j++)
         {
@@ -337,29 +346,26 @@ void assemble_ifunction (libMesh::EquationSystems& es,
           Kvp(i,j) += -JxW[qp]*(psi[j][qp]*dphi[i][qp](1));
           if (dim==3) Kwp(i,j) += JxW[qp]*(psi[j][qp]*dphi[i][qp](2));
           //printf("************* assemble_ifunction: I am here 3,\n");
-          
+
           Kpu(j,i) += -JxW[qp]*psi[j][qp]*dphi[i][qp](0);
           Kpv(j,i) += -JxW[qp]*psi[j][qp]*dphi[i][qp](1);
           if (dim==3) Kpw(j,i) += -JxW[qp]*(psi[j][qp]*dphi[i][qp](2));
         } // end for j-loop
         //printf("************* assemble_ifunction: I am here 4,\n");
       } // end for i-loop
-    
+
     } // end of the quadrature point qp-loop
-    
-    std::cout<<rank<<"3"<<std::endl;
+
     // compuate the rhs vector caused by the pressure jump
     compute_element_rhs(mesh, elem, n_u_dofs, n_p_dofs, *fe_vel, *fe_pres,
                         periodicity, time, Fu,Fv,Fw,Fp);
-    
-    
+
     // At this point the interior element integration has been completed.
     // Now, we impose boundary conditions via the penalty method.
     // *** only Fe is changed, Ke is an auxiliary matrix.
     apply_bc_by_penalty(mesh, elem, time,"both", Kuu, Kvv, Kww, Kpp, Fu, Fv, Fw, Fp);
     //apply_bc_by_penalty(mesh, elem, time,"matrix", Muu, Mvv, Mww, Mpp, Fu, Fv, Fw, Fp);
-    
-    std::cout<<rank<<"4"<<std::endl;
+
     // Now we have element-wise quantities: Me, Ke, Fe, then we can
     // compute the element ifunction
     for (unsigned int i=0; i<n_dofs; i++)
@@ -386,9 +392,9 @@ void assemble_ifunction (libMesh::EquationSystems& es,
     //GeomTools::output_dense_vector(Fe, Fe.size());
     // --------------------------------------------
   } // end of element loop
-  
 //  navier_stokes_system.rhs->close();
-  
+  printf("rank=%d loop ends\n",rank);
+
   // That's it.
   return;
   
