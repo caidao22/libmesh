@@ -106,9 +106,6 @@ int check_libmesh()
 }
 
 
-
-
-
 // ============================================================================================
 // ============================================================================================
 // The main program.
@@ -116,10 +113,9 @@ int main (int argc, char** argv)
 {
   // Initialize libMesh.
   LibMeshInit init (argc, argv);
-
   // check libmesh system
   check_libmesh();
-  
+
   // Parse the input file and Read in parameters from the input file
   GetPot input_file("navier_stokes_control.in");
   const int max_linear_iterations   = input_file("max_linear_iterations", 5000);
@@ -149,9 +145,9 @@ int main (int argc, char** argv)
 
   // Create a mesh, with dimension to be overridden later, distributed
   // across the default MPI communicator.
-//  Mesh mesh(init.comm());
+  //Mesh mesh(init.comm());
   SerialMesh mesh(init.comm());
-
+  mesh.print_info();
   // Use the MeshTools::Generation mesh generator to create a uniform
   // 2D grid on the square [-1,1]^2.  We instruct the mesh generator
   // to build a mesh of 8x8 \p Quad9 elements in 2D.  Building these
@@ -230,7 +226,7 @@ int main (int argc, char** argv)
     dof_map.add_periodic_boundary(horz);
     std::cout<<"========================= periodic bc is applied ========================"<<std::endl;
   }
-  
+  std::cout<<"done bc"<<std::endl;
   // Initialize the data structures for the equation system.
   equation_systems.init ();
 
@@ -246,7 +242,6 @@ int main (int argc, char** argv)
 
 
   // Petsc TS solver
-  printf("************* Entering Petsc TS solver ...... \n");
   PetscTSSolver<Number> ts_solver(navier_stokes_system);
   ts_solver.set_duration(initial_time, final_time);
   ts_solver.set_timestep(dt, n_timesteps);

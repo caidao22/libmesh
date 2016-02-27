@@ -293,7 +293,7 @@ void PetscTSSolver<T>::init ()
 	ierr = DMDestroy(&dm); LIBMESH_CHKERR(ierr);
     ierr = TSMonitorSet(_ts, __libmesh_petsc_ts_monitor, &this->system(), NULL); LIBMESH_CHKERR(ierr);
     //PetscPrintf(this->comm().get(),"************* --- Petsc TS monitor is set ...... \n");
-    
+
     // Build the vector and matrices
     // TODO: how can we ensure it's a PetscVector*? Is cast_ptr enough?
 //    NumericVector<Number> *R    = NumericVector<Number>::build(this->comm()).release();
@@ -358,8 +358,8 @@ void PetscTSSolver<T>::solve ()
               TSConvergedReasons[_reason], (double)ftime, nsteps);
 
   STOP_LOG("solve()", "PetscTSSolver");
-  
-  this->system().update();
+
+  //this->system().update();
 }
 
   

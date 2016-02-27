@@ -100,7 +100,7 @@ void PetscTSSystem::solve ()
   STOP_LOG("solve()", "PetscTSSystem");
   
   // Update the system after the solve
-  this->update();
+ // this->update();
 }
 
 

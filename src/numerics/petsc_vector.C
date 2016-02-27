@@ -766,17 +766,21 @@ void PetscVector<T>::localize (NumericVector<T> & v_local_in,
   // FIXME: Workaround for a strange bug at large-scale.
   // If we have ghosting, PETSc lets us just copy the solution, and
   // doing so avoids a segfault?
+  std::cout<<"enter localize"<<std::endl;
+  std::cout<<v_local_in.type()<<std::endl;
+  std::cout<<this->type()<<std::endl;
   if (v_local_in.type() == GHOSTED &&
       this->type() == PARALLEL)
     {
+      std::cout<<"ghost"<<std::endl;
       v_local_in = *this;
       return;
     }
 
   // Normal code path begins here
-
+  std::cout<<"restore array"<<std::endl;
   this->_restore_array();
-
+  std::cout<<"done restore array"<<std::endl;
   // Make sure the NumericVector passed in is really a PetscVector
   PetscVector<T> * v_local = cast_ptr<PetscVector<T> *>(&v_local_in);
 
