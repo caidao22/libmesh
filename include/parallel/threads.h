@@ -549,7 +549,7 @@ void parallel_for (const Range & range, const Body & body)
 #endif
     }
 
-#if LIBMESH_HAVE_PTHREAD
+#if !LIBMESH_HAVE_OPENMP
   // Wait for them to finish
 
   // The use of 'int' instead of unsigned for the iteration variable
@@ -661,7 +661,7 @@ void parallel_reduce (const Range & range, Body & body)
 #endif
     }
 
-#if LIBMESH_HAVE_PTHREAD
+#if !LIBMESH_HAVE_OPENMP
   // Wait for them to finish
   for(unsigned int i=0; i<n_threads; i++)
       pthread_join(threads[i], libmesh_nullptr);
