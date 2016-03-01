@@ -154,6 +154,7 @@ void assemble_ifunction (libMesh::EquationSystems& es,
   const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
 
   printf("rank=%d loop starts, el=%u \n",rank,(*el)->id());
+  dof_map.print_info();
 
   for ( ; el != end_el; ++el)
   {
@@ -164,6 +165,7 @@ void assemble_ifunction (libMesh::EquationSystems& es,
     // Get the degree of freedom indices for the current element.
     dof_map.dof_indices (elem, dof_indices);
     if (rank==1) {
+    printf("rank[1] ");
     for (auto i = dof_indices.begin(); i != dof_indices.end(); ++i) printf("%u ",*i);printf("\n");}
     dof_map.dof_indices (elem, dof_indices_u, u_var);
     //    if (rank==1) {

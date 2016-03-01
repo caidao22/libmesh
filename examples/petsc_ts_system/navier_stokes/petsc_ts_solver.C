@@ -135,11 +135,17 @@ extern "C"
     X.swap(X_sys);
     tssys.update();
     X.swap(X_sys);
+    tssys.get_dof_map().print_info();
+    DM dm;
+    ierr = TSGetDM(ts,&dm);
+    ierr = DMView(dm,0);
     // Enforce constraints (if any) exactly on the
     // current_local_solution.  This is the solution vector that is
     // actually used in the computation of the residual below, and is
     // not locked by debug-enabled PETSc the way that "x" is.
     tssys.get_dof_map().enforce_constraints_exactly(tssys, tssys.current_local_solution.get());
+    ierr = TSGetDM(ts,&dm);
+    ierr = DMView(dm,0);
     //if (solver->_zero_out_residual)
     //  F.zero();
 
@@ -326,7 +332,7 @@ void PetscTSSolver<T>::init ()
     ierr = DMSetUp(dm); LIBMESH_CHKERR(ierr);
     ierr = TSSetDM(this->_ts, dm); LIBMESH_CHKERR(ierr);
     // TS now owns the reference to dm
-	ierr = DMDestroy(&dm); LIBMESH_CHKERR(ierr);
+    ierr = DMDestroy(&dm); LIBMESH_CHKERR(ierr);
     ierr = TSMonitorSet(_ts, __libmesh_petsc_ts_monitor, &this->system(), NULL); LIBMESH_CHKERR(ierr);
 
     // Build the vector and matrices
@@ -340,7 +346,7 @@ void PetscTSSolver<T>::init ()
 //    PetscPrintf(this->comm().get(),"************* --- Petsc TS SparseMatix/Vector are created ...... \n");
 
     // solution of the system
-    PetscVector<Number>& X_sys = *cast_ptr<PetscVector<Number>*>(_system.solution.get());
+    PetscVector<Number>& X_sys = *cast_ptr<PetscVector<Number>*>(this->system().solution.get());
     // Set the IFunction
     ierr = TSSetIFunction(_ts,X_sys.vec(), __libmesh_petsc_ts_ifunction, &this->system()); LIBMESH_CHKERR(ierr);
     //PetscPrintf(this->comm().get(),"************* --- Petsc TS TSSetIFunction are completed ...... \n");
@@ -378,7 +384,7 @@ void PetscTSSolver<T>::solve ()
   PetscErrorCode ierr=0;
   
   // Set the solution
-  PetscVector<Number>* PETScX  = cast_ptr<PetscVector<Number>*>(_system.solution.get());
+  PetscVector<Number>* PETScX  = cast_ptr<PetscVector<Number>*>(this->system().solution.get());
   ierr = TSSolve (_ts,PETScX->vec()); LIBMESH_CHKERR(ierr);
 
   // Get and store the reason for convergence
