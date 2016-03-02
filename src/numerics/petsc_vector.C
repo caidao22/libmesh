@@ -769,7 +769,6 @@ void PetscVector<T>::localize (NumericVector<T> & v_local_in,
   if (v_local_in.type() == GHOSTED &&
       this->type() == PARALLEL)
     {
-      std::cout<<"ghost"<<std::endl;
       v_local_in = *this;
       return;
     }

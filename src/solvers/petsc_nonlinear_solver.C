@@ -426,6 +426,7 @@ void PetscNonlinearSolver<T>::init (const char * name)
       ierr = DMCreate(this->comm().get(), &dm);LIBMESH_CHKERR(ierr);
       ierr = DMSetType(dm,DMLIBMESH);LIBMESH_CHKERR(ierr);
       ierr = DMlibMeshSetSystem(dm,this->system());LIBMESH_CHKERR(ierr);
+      ierr = DMView(dm,0);
       if (name)
         {
           ierr = DMSetOptionsPrefix(dm,name);    LIBMESH_CHKERR(ierr);
