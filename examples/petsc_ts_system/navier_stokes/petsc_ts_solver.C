@@ -127,7 +127,7 @@ extern "C"
     PetscVector<Number> X     (x,     tssys.comm());
     PetscVector<Number> Xdot  (xdot,  tssys.comm());
     PetscVector<Number> F     (f,     tssys.comm());
-   
+
     // Use the system's update() to get a good local version of the
     // parallel solution.  This operation does not modify the incoming
     // "x" vector, it only localizes information from "x" into
@@ -149,8 +149,13 @@ extern "C"
     //if (solver->_zero_out_residual)
     //  F.zero();
 
+    // Localize the potentially parallel vector
+    UniquePtr<NumericVector<Number> > local_xdot = NumericVector<Number>::build(tssys.comm());
+    local_xdot->init(tssys.current_local_solution->size(),true);
+    Xdot.localize (*local_xdot, tssys.get_dof_map().get_send_list());
+
     // evaluate the ifunction
-    tssys.IFunction(time,*tssys.current_local_solution.get(),Xdot,F);
+    tssys.IFunction(time,*tssys.current_local_solution.get(),*local_xdot,F);
 
     F.close();    
     STOP_LOG("IFunction()", "PetscTSSolver");
@@ -365,7 +370,8 @@ void PetscTSSolver<T>::init ()
     //PetscPrintf(this->comm().get(),"************* --- Petsc TS TSSetIJacobian are completed ...... \n");
 
     ierr = TSSetDuration(_ts, _max_steps, _max_time); LIBMESH_CHKERR(ierr);
-    ierr = TSSetInitialTimeStep(_ts, _initial_time, _dt); LIBMESH_CHKERR(ierr);
+    ierr = TSSetExactFinalTime(_ts,TS_EXACTFINALTIME_STEPOVER); LIBMESH_CHKERR(ierr);
+	ierr = TSSetInitialTimeStep(_ts, _initial_time, _dt); LIBMESH_CHKERR(ierr);
     ierr = TSSetFromOptions(_ts); LIBMESH_CHKERR(ierr);
     //PetscPrintf(this->comm().get(),"************* --- Petsc TSSetFromOptions are completed ...... \n");
     
