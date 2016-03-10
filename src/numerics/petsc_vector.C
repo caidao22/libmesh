@@ -34,8 +34,6 @@
 namespace libMesh
 {
 
-
-
 //-----------------------------------------------------------------------
 // PetscVector members
 
@@ -1315,53 +1313,70 @@ void PetscVector<T>::create_subvector(NumericVector<T> & subvector,
 template <typename T>
 void PetscVector<T>::_get_array() const
 {
+#ifndef LIBMESH_HAVE_CXX11_THREAD
+  Threads::spin_mutex::scoped_lock lock(_petsc_vector_mutex);
+#endif
+
   libmesh_assert (this->initialized());
   if(!_array_is_present)
     {
-      PetscErrorCode ierr=0;
-      if(this->type() != GHOSTED)
-        {
-#if PETSC_VERSION_LESS_THAN(3,2,0)
-          // Vec{Get,Restore}ArrayRead were introduced in PETSc 3.2.0.  If you
-          // have an older PETSc than that, we'll do an ugly
-          // const_cast and call VecGetArray() instead.
-          ierr = VecGetArray(_vec, const_cast<PetscScalar **>(&_values));
-#else
-          ierr = VecGetArrayRead(_vec, &_values);
+#ifdef LIBMESH_HAVE_CXX11_THREAD
+      std::atomic_thread_fence(std::memory_order_acquire);
 #endif
-          LIBMESH_CHKERR(ierr);
-        }
-      else
+      if (!_array_is_present)
         {
-          ierr = VecGhostGetLocalForm (_vec,&_local_form);
-          LIBMESH_CHKERR(ierr);
+#ifdef LIBMESH_HAVE_CXX11_THREAD
+          std::lock_guard<std::mutex> lock(_petsc_vector_mutex);
+#endif
+          PetscErrorCode ierr=0;
+          if(this->type() != GHOSTED)
+            {
+#if PETSC_VERSION_LESS_THAN(3,2,0)
+              // Vec{Get,Restore}ArrayRead were introduced in PETSc 3.2.0.  If you
+              // have an older PETSc than that, we'll do an ugly
+              // const_cast and call VecGetArray() instead.
+              ierr = VecGetArray(_vec, const_cast<PetscScalar **>(&_values));
+#else
+              ierr = VecGetArrayRead(_vec, &_values);
+#endif
+              LIBMESH_CHKERR(ierr);
+            }
+          else
+            {
+              ierr = VecGhostGetLocalForm (_vec,&_local_form);
+              LIBMESH_CHKERR(ierr);
 
 #if PETSC_VERSION_LESS_THAN(3,2,0)
-          // Vec{Get,Restore}ArrayRead were introduced in PETSc 3.2.0.  If you
-          // have an older PETSc than that, we'll do an ugly
-          // const_cast and call VecGetArray() instead.
-          ierr = VecGetArray(_local_form, const_cast<PetscScalar **>(&_values));
+              // Vec{Get,Restore}ArrayRead were introduced in PETSc 3.2.0.  If you
+              // have an older PETSc than that, we'll do an ugly
+              // const_cast and call VecGetArray() instead.
+              ierr = VecGetArray(_local_form, const_cast<PetscScalar **>(&_values));
 #else
-          ierr = VecGetArrayRead(_local_form, &_values);
+              ierr = VecGetArrayRead(_local_form, &_values);
 #endif
-          LIBMESH_CHKERR(ierr);
+              LIBMESH_CHKERR(ierr);
 #ifndef NDEBUG
-          PetscInt my_local_size = 0;
-          ierr = VecGetLocalSize(_local_form, &my_local_size);
-          LIBMESH_CHKERR(ierr);
-          _local_size = static_cast<numeric_index_type>(my_local_size);
+              PetscInt my_local_size = 0;
+              ierr = VecGetLocalSize(_local_form, &my_local_size);
+              LIBMESH_CHKERR(ierr);
+              _local_size = static_cast<numeric_index_type>(my_local_size);
+#endif
+            }
+
+          { // cache ownership range
+            PetscInt petsc_first=0, petsc_last=0;
+            ierr = VecGetOwnershipRange (_vec, &petsc_first, &petsc_last);
+            LIBMESH_CHKERR(ierr);
+            _first = static_cast<numeric_index_type>(petsc_first);
+            _last = static_cast<numeric_index_type>(petsc_last);
+          }
+#ifdef LIBMESH_HAVE_CXX11_THREAD
+          std::atomic_thread_fence(std::memory_order_release);
+          _array_is_present.store(true, std::memory_order_relaxed);
+#else
+          _array_is_present = true;
 #endif
         }
-
-      { // cache ownership range
-        PetscInt petsc_first=0, petsc_last=0;
-        ierr = VecGetOwnershipRange (_vec, &petsc_first, &petsc_last);
-        LIBMESH_CHKERR(ierr);
-        _first = static_cast<numeric_index_type>(petsc_first);
-        _last = static_cast<numeric_index_type>(petsc_last);
-      }
-
-      _array_is_present = true;
     }
 }
 
@@ -1370,44 +1385,63 @@ void PetscVector<T>::_get_array() const
 template <typename T>
 void PetscVector<T>::_restore_array() const
 {
+#ifndef LIBMESH_HAVE_CXX11_THREAD
+  Threads::spin_mutex::scoped_lock lock(_petsc_vector_mutex);
+#endif
+
   libmesh_assert (this->initialized());
   if(_array_is_present)
     {
-      PetscErrorCode ierr=0;
-      if(this->type() != GHOSTED)
-        {
-#if PETSC_VERSION_LESS_THAN(3,2,0)
-          // Vec{Get,Restore}ArrayRead were introduced in PETSc 3.2.0.  If you
-          // have an older PETSc than that, we'll do an ugly
-          // const_cast and call VecRestoreArray() instead.
-          ierr = VecRestoreArray (_vec, const_cast<PetscScalar **>(&_values));
-#else
-          ierr = VecRestoreArrayRead (_vec, &_values);
+#ifdef LIBMESH_HAVE_CXX11_THREAD
+      std::atomic_thread_fence(std::memory_order_acquire);
 #endif
 
-          LIBMESH_CHKERR(ierr);
-          _values = libmesh_nullptr;
-        }
-      else
+      if(_array_is_present)
         {
-#if PETSC_VERSION_LESS_THAN(3,2,0)
-          // Vec{Get,Restore}ArrayRead were introduced in PETSc 3.2.0.  If you
-          // have an older PETSc than that, we'll do an ugly
-          // const_cast and call VecRestoreArray() instead.
-          ierr = VecRestoreArray (_local_form, const_cast<PetscScalar **>(&_values));
-#else
-          ierr = VecRestoreArrayRead (_local_form, &_values);
+#ifdef LIBMESH_HAVE_CXX11_THREAD
+          std::lock_guard<std::mutex> lock(_petsc_vector_mutex);
 #endif
-          LIBMESH_CHKERR(ierr);
-          _values = libmesh_nullptr;
-          ierr = VecGhostRestoreLocalForm (_vec,&_local_form);
-          LIBMESH_CHKERR(ierr);
-          _local_form = libmesh_nullptr;
+          PetscErrorCode ierr=0;
+          if(this->type() != GHOSTED)
+            {
+#if PETSC_VERSION_LESS_THAN(3,2,0)
+              // Vec{Get,Restore}ArrayRead were introduced in PETSc 3.2.0.  If you
+              // have an older PETSc than that, we'll do an ugly
+              // const_cast and call VecRestoreArray() instead.
+              ierr = VecRestoreArray (_vec, const_cast<PetscScalar **>(&_values));
+#else
+              ierr = VecRestoreArrayRead (_vec, &_values);
+#endif
+
+              LIBMESH_CHKERR(ierr);
+              _values = libmesh_nullptr;
+            }
+          else
+            {
+#if PETSC_VERSION_LESS_THAN(3,2,0)
+              // Vec{Get,Restore}ArrayRead were introduced in PETSc 3.2.0.  If you
+              // have an older PETSc than that, we'll do an ugly
+              // const_cast and call VecRestoreArray() instead.
+              ierr = VecRestoreArray (_local_form, const_cast<PetscScalar **>(&_values));
+#else
+              ierr = VecRestoreArrayRead (_local_form, &_values);
+#endif
+              LIBMESH_CHKERR(ierr);
+              _values = libmesh_nullptr;
+              ierr = VecGhostRestoreLocalForm (_vec,&_local_form);
+              LIBMESH_CHKERR(ierr);
+              _local_form = libmesh_nullptr;
 #ifndef NDEBUG
-          _local_size = 0;
+              _local_size = 0;
+#endif
+            }
+#ifdef LIBMESH_HAVE_CXX11_THREAD
+          std::atomic_thread_fence(std::memory_order_release);
+          _array_is_present.store(false, std::memory_order_relaxed);
+#else
+          _array_is_present = false;
 #endif
         }
-      _array_is_present = false;
     }
 }
 
