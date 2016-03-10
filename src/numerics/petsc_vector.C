@@ -774,9 +774,7 @@ void PetscVector<T>::localize (NumericVector<T> & v_local_in,
     }
 
   // Normal code path begins here
-  std::cout<<"restore array"<<std::endl;
   this->_restore_array();
-  std::cout<<"done restore array"<<std::endl;
   // Make sure the NumericVector passed in is really a PetscVector
   PetscVector<T> * v_local = cast_ptr<PetscVector<T> *>(&v_local_in);
 

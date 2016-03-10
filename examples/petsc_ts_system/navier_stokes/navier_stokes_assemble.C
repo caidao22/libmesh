@@ -153,20 +153,19 @@ void assemble_ifunction (libMesh::EquationSystems& es,
   MeshBase::const_element_iterator       el     = mesh.active_local_elements_begin();
   const MeshBase::const_element_iterator end_el = mesh.active_local_elements_end();
 
-  printf("rank=%d loop starts, el=%u \n",rank,(*el)->id());
-  dof_map.print_info();
+  //dof_map.print_info();
 
   for ( ; el != end_el; ++el)
   {
     // Store a pointer to the element we are currently working on.
     const Elem* elem = *el;
-    printf("************* [%d] assemble_ifunction in element %u/%u \n",rank, elem->id(), mesh.n_elem() );
+    //printf("************* [%d] assemble_ifunction in element %u/%u \n",rank, elem->id(), mesh.n_elem() );
 
     // Get the degree of freedom indices for the current element.
     dof_map.dof_indices (elem, dof_indices);
-    if (rank==1) {
-    printf("rank[1] ");
-    for (auto i = dof_indices.begin(); i != dof_indices.end(); ++i) printf("%u ",*i);printf("\n");}
+    //if (rank==1) {
+    //printf("rank[1] ");
+    //for (auto i = dof_indices.begin(); i != dof_indices.end(); ++i) printf("%u ",*i);printf("\n");}
     dof_map.dof_indices (elem, dof_indices_u, u_var);
     //    if (rank==1) {
     //for (auto i = dof_indices_u.begin(); i != dof_indices_u.end(); ++i) printf("%u ",*i);printf("\n");}
@@ -178,8 +177,8 @@ void assemble_ifunction (libMesh::EquationSystems& es,
     //for (auto i = dof_indices_p.begin(); i != dof_indices_p.end(); ++i) printf("%u ",*i);printf("\n");}
 
     if(rank==0) {
-      printf("rank[0] ");
-      for (auto i = dof_indices.begin(); i != dof_indices.end(); ++i) printf("%u ",*i);printf("\n");
+      //printf("rank[0] ");
+      //for (auto i = dof_indices.begin(); i != dof_indices.end(); ++i) printf("%u ",*i);printf("\n");
     }
     const unsigned int n_dofs   = dof_indices.size();
     const unsigned int n_u_dofs = dof_indices_u.size();
@@ -273,13 +272,12 @@ void assemble_ifunction (libMesh::EquationSystems& es,
       Vwdot.reposition (w_var*n_u_dofs, n_w_dofs);
     } // end if (dim==3)
     
-    if (rank==1) printf("1\n");
     // First we need nodal values of u, v, w, p in this element
     // navier_stokes_system.solution->get (dof_indices_u, elem_u);
     std::vector<Real> elem_u, elem_v, elem_w, elem_p;
-    X.get (dof_indices_u, elem_u);if (rank==1) printf("2\n");
-    X.get (dof_indices_v, elem_v);if (rank==1) printf("3\n");
-    X.get (dof_indices_p, elem_p);if (rank==1) printf("4\n");
+    X.get (dof_indices_u, elem_u);
+    X.get (dof_indices_v, elem_v);
+    X.get (dof_indices_p, elem_p);
 
     if (dim==3) X.get (dof_indices_w, elem_w);
     
@@ -395,7 +393,6 @@ void assemble_ifunction (libMesh::EquationSystems& es,
     // --------------------------------------------
   } // end of element loop
 //  navier_stokes_system.rhs->close();
-  printf("rank=%d loop ends\n",rank);
 
   // That's it.
   return;
@@ -1025,7 +1022,7 @@ void NSPetscTSSystem::IJacobian (Real time,
 void NSPetscTSSystem::monitor (int  step, Real time,
                              NumericVector<Number>& X)
 {
-/*
+
 #ifdef LIBMESH_HAVE_EXODUS_API
 //  // We write the file in the ExodusII format.
 //    std::ostringstream file_name;
@@ -1048,7 +1045,7 @@ void NSPetscTSSystem::monitor (int  step, Real time,
   exodus_IO.append(true);
   exodus_IO.write_timestep (exodus_filename, this->get_equation_systems(),step+1,time);
 #endif // #ifdef LIBMESH_HAVE_EXODUS_API
-
+/*
   if (step==0)
     GMVIO(this->get_mesh()).write_equation_systems("ns_out_000.gmv",
                                                   this->get_equation_systems());

@@ -226,7 +226,6 @@ int main (int argc, char** argv)
     dof_map.add_periodic_boundary(horz);
     std::cout<<"========================= periodic bc is applied ========================"<<std::endl;
   }
-  std::cout<<"done bc"<<std::endl;
   // Initialize the data structures for the equation system.
   equation_systems.init ();
 
