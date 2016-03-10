@@ -135,17 +135,11 @@ extern "C"
     X.swap(X_sys);
     tssys.update();
     X.swap(X_sys);
-    tssys.get_dof_map().print_info();
-    DM dm;
-    ierr = TSGetDM(ts,&dm);
-    ierr = DMView(dm,0);
     // Enforce constraints (if any) exactly on the
     // current_local_solution.  This is the solution vector that is
     // actually used in the computation of the residual below, and is
     // not locked by debug-enabled PETSc the way that "x" is.
     tssys.get_dof_map().enforce_constraints_exactly(tssys, tssys.current_local_solution.get());
-    ierr = TSGetDM(ts,&dm);
-    ierr = DMView(dm,0);
     //if (solver->_zero_out_residual)
     //  F.zero();
 
