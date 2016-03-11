@@ -81,7 +81,7 @@ void assemble_ifunction (libMesh::EquationSystems& es,
   // Get a constant reference to the mesh object.
   const MeshBase& mesh    = es.get_mesh();
   const unsigned int dim  = mesh.mesh_dimension();
-  
+ 
   // Get a reference to the Stokes system object.
   PetscTSSystem & navier_stokes_system = es.get_system<PetscTSSystem> ("Navier-Stokes");
   
@@ -201,7 +201,8 @@ void assemble_ifunction (libMesh::EquationSystems& es,
     Me.resize (n_dofs, n_dofs);
     Ke.resize (n_dofs, n_dofs);
     Fe.resize (n_dofs);
-    Ve.resize (n_dofs);   Vedot.resize (n_dofs);
+    Ve.resize (n_dofs);
+    Vedot.resize (n_dofs);
 
     // Reposition the submatrices...  The idea is this:
     //         -           -          -  -
@@ -381,7 +382,6 @@ void assemble_ifunction (libMesh::EquationSystems& es,
     // *** only Fe is changed, Ke is an auxiliary matrix.
     //apply_bc_by_penalty(mesh, elem, time,"vector", Kuu, Kvv, Kww, Kpp, Fu, Fv, Fw, Fp);
     
-  
     
     // add to the Residual vector
     // should we apply the zero filter to the solution/rhs before assemble?

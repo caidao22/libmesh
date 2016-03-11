@@ -151,6 +151,9 @@ extern "C"
     // evaluate the ifunction
     tssys.IFunction(time,*tssys.current_local_solution.get(),*local_xdot,F);
 
+    // evaluate the ifunction
+    //tssys.IFunction(time,*tssys.current_local_solution.get(),Xdot,F);
+
     F.close();    
     STOP_LOG("IFunction()", "PetscTSSolver");
     
@@ -163,7 +166,6 @@ extern "C"
     //ierr = PetscViewerDestroy(&vec_viewer);
     //CHKERRABORT(tssys->comm().get(), ierr);
     // --------------------------------------------------------------------
-    
     return ierr;
   }
   
@@ -212,12 +214,12 @@ extern "C"
     STOP_LOG("IJacobian()", "PetscTSSolver");
     
     // ---------------------- view the matrix ijac ---------------------------
-//    PetscViewer mat_viewer;
-//    ierr = PetscPrintf(tssys->comm().get(),"View Mat info: \n"); CHKERRABORT(tssys->comm().get(), ierr);
-//    ierr = PetscViewerCreate(tssys->comm().get(), &mat_viewer);  CHKERRABORT(tssys->comm().get(), ierr);
-//    ierr = PetscViewerSetType(mat_viewer, PETSCVIEWERASCII);   CHKERRABORT(tssys->comm().get(), ierr);
-//    ierr = MatView(ijac, mat_viewer);                          CHKERRABORT(tssys->comm().get(), ierr);
-//    ierr = PetscViewerDestroy(&mat_viewer);                    CHKERRABORT(tssys->comm().get(), ierr);
+    PetscViewer mat_viewer;
+    ierr = PetscPrintf(tssys.comm().get(),"View Mat info: \n"); CHKERRABORT(tssys.comm().get(), ierr);
+    ierr = PetscViewerCreate(tssys.comm().get(), &mat_viewer);  CHKERRABORT(tssys.comm().get(), ierr);
+    ierr = PetscViewerSetType(mat_viewer, PETSCVIEWERASCII);   CHKERRABORT(tssys.comm().get(), ierr);
+    ierr = MatView(ijac, mat_viewer);                          CHKERRABORT(tssys.comm().get(), ierr);
+    ierr = PetscViewerDestroy(&mat_viewer);                    CHKERRABORT(tssys.comm().get(), ierr);
     // -----------------------------------------------------------------------
     
     return ierr;
@@ -306,14 +308,12 @@ void PetscTSSolver<T>::init ()
   // Initialize the data structures if not done so already.
   if (!this->_initialized)
   {
-    PetscPrintf(this->comm().get(),"************* Initializing the Petsc TS solver ...... \n");
     this->_initialized  = true;
     PetscErrorCode ierr = 0;
 
     // Create TS
     ierr = TSCreate(this->comm().get(), &_ts); LIBMESH_CHKERR(ierr);
     ierr = TSSetProblemType(_ts, TS_NONLINEAR); LIBMESH_CHKERR(ierr);
-    PetscPrintf(this->comm().get(),"************* --- Petsc TS is created ...... \n");
     
     // Attaching a DM to TS.
     DM dm;
@@ -342,32 +342,27 @@ void PetscTSSolver<T>::init ()
 //    _J = cast_ptr<PetscMatrix<Number>*>(J);
 //    SparseMatrix<Number>  *Jpre = SparseMatrix<Number>::build(this->comm()).release();
 //    _Jpre = cast_ptr<PetscMatrix<Number>*>(Jpre);
-//    PetscPrintf(this->comm().get(),"************* --- Petsc TS SparseMatix/Vector are created ...... \n");
 
     // solution of the system
     PetscVector<Number>& X_sys = *cast_ptr<PetscVector<Number>*>(this->system().solution.get());
     // Set the IFunction
     ierr = TSSetIFunction(_ts,X_sys.vec(), __libmesh_petsc_ts_ifunction, &this->system()); LIBMESH_CHKERR(ierr);
-    //PetscPrintf(this->comm().get(),"************* --- Petsc TS TSSetIFunction are completed ...... \n");
     
     // Set the IJacobian
     PetscMatrix<Number>& Jac_sys = *cast_ptr<PetscMatrix<Number>*>(this->system().matrix);
     if (this->system().request_matrix("Preconditioner"))
     {
-      PetscPrintf(this->comm().get(),"************* --- Preconditioner matrix has been found! ...... \n");
       this->system().request_matrix("Preconditioner")->close();
       PetscMatrix<Number>& PC_sys = *cast_ptr<PetscMatrix<Number>*>( this->system().request_matrix("Preconditioner") );
       ierr = TSSetIJacobian(_ts,Jac_sys.mat(),PC_sys.mat(),__libmesh_petsc_ts_ijacobian,&this->system()); LIBMESH_CHKERR(ierr);
     }
     else
       ierr = TSSetIJacobian(_ts,Jac_sys.mat(),Jac_sys.mat(),__libmesh_petsc_ts_ijacobian,&this->system()); LIBMESH_CHKERR(ierr);
-    //PetscPrintf(this->comm().get(),"************* --- Petsc TS TSSetIJacobian are completed ...... \n");
 
     ierr = TSSetDuration(_ts, _max_steps, _max_time); LIBMESH_CHKERR(ierr);
     ierr = TSSetExactFinalTime(_ts,TS_EXACTFINALTIME_STEPOVER); LIBMESH_CHKERR(ierr);
 	ierr = TSSetInitialTimeStep(_ts, _initial_time, _dt); LIBMESH_CHKERR(ierr);
     ierr = TSSetFromOptions(_ts); LIBMESH_CHKERR(ierr);
-    //PetscPrintf(this->comm().get(),"************* --- Petsc TSSetFromOptions are completed ...... \n");
     
   } // end if
   
@@ -379,7 +374,6 @@ void PetscTSSolver<T>::init ()
 template <typename T>
 void PetscTSSolver<T>::solve ()
 {
-  PetscPrintf(this->comm().get(),"************* the Petsc TS solver starts to solve ...... \n");
   START_LOG("solve()", "PetscTSSolver");
   PetscErrorCode ierr=0;
   
