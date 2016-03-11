@@ -123,48 +123,47 @@ extern "C"
     
     // No way to safety-check this cast, since we got a void*...
     PetscTSSystem & tssys = *(static_cast<PetscTSSystem *>(ctx));
-    PetscVector<Number> & X_sys = *cast_ptr<PetscVector<Number> *>(tssys.solution.get());   
-    PetscVector<Number> X     (x,     tssys.comm());
+
+	PetscVector<Number> X     (x,     tssys.comm());
     PetscVector<Number> Xdot  (xdot,  tssys.comm());
     PetscVector<Number> F     (f,     tssys.comm());
-
+    
     // Use the system's update() to get a good local version of the
     // parallel solution.  This operation does not modify the incoming
     // "x" vector, it only localizes information from "x" into
     // sys.current_local_solution.
-    X.swap(X_sys);
+    PetscVector<Number> & X_sys = *cast_ptr<PetscVector<Number> *>(tssys.solution.get());   
+	X.swap(X_sys);
     tssys.update();
     X.swap(X_sys);
     // Enforce constraints (if any) exactly on the
     // current_local_solution.  This is the solution vector that is
     // actually used in the computation of the residual below, and is
     // not locked by debug-enabled PETSc the way that "x" is.
-    tssys.get_dof_map().enforce_constraints_exactly(tssys, tssys.current_local_solution.get());
+    //tssys.get_dof_map().enforce_constraints_exactly(tssys, tssys.current_local_solution.get());
     //if (solver->_zero_out_residual)
     //  F.zero();
 
     // Localize the potentially parallel vector
     UniquePtr<NumericVector<Number> > local_xdot = NumericVector<Number>::build(tssys.comm());
-    local_xdot->init(tssys.current_local_solution->size(),true);
+    local_xdot->init(tssys.current_local_solution->size(),false);
     Xdot.localize (*local_xdot, tssys.get_dof_map().get_send_list());
 
     // evaluate the ifunction
     tssys.IFunction(time,*tssys.current_local_solution.get(),*local_xdot,F);
-
-    // evaluate the ifunction
-    //tssys.IFunction(time,*tssys.current_local_solution.get(),Xdot,F);
+   
+    //tssys.IFunction(time,X,Xdot,F);
 
     F.close();    
     STOP_LOG("IFunction()", "PetscTSSolver");
     
     // ---------------------- view the vector f ---------------------------
     //PetscViewer vec_viewer;
-    //ierr = PetscPrintf(tssys->comm().get() ,"View Vec info: \n");
-    //ierr = PetscViewerCreate(tssys->comm().get(), &vec_viewer);
+    //ierr = PetscPrintf(tssys.comm().get() ,"View Vec info: \n");
+    //ierr = PetscViewerCreate(tssys.comm().get(), &vec_viewer);
     //ierr = PetscViewerSetType(vec_viewer, PETSCVIEWERASCII);
     //ierr = VecView(f, vec_viewer);
     //ierr = PetscViewerDestroy(&vec_viewer);
-    //CHKERRABORT(tssys->comm().get(), ierr);
     // --------------------------------------------------------------------
     return ierr;
   }
@@ -183,13 +182,13 @@ extern "C"
     
     // No way to safety-check this cast, since we got a void*...
     PetscTSSystem & tssys = *(static_cast<PetscTSSystem *>(ctx));
-    PetscVector<Number> & X_sys = *cast_ptr<PetscVector<Number> *>(tssys.solution.get());
     
     PetscVector<Number> X     (x,       tssys.comm());
     PetscVector<Number> Xdot  (xdot,    tssys.comm());
     PetscMatrix<Number> IJ    (ijac,    tssys.comm());
     PetscMatrix<Number> IJpre (ijacpre, tssys.comm());
 
+    PetscVector<Number> & X_sys = *cast_ptr<PetscVector<Number> *>(tssys.solution.get());
     // Set the dof maps
     IJpre.attach_dof_map(tssys.get_dof_map());
     IJ.attach_dof_map(tssys.get_dof_map());
@@ -197,29 +196,28 @@ extern "C"
     X.swap(X_sys);
     tssys.update();
     X.swap(X_sys);
-
     // Enforce constraints (if any) exactly on the
     // current_local_solution.  This is the solution vector that is
     // actually used in the computation of the residual below, and is
     // not locked by debug-enabled PETSc the way that "x" is.
-    tssys.get_dof_map().enforce_constraints_exactly(tssys, tssys.current_local_solution.get());
-
+    //tssys.get_dof_map().enforce_constraints_exactly(tssys, tssys.current_local_solution.get());
     //if (solver->_zero_out_jacobian)
     //  IJpre.zero();             
     // evaluate the matrices
     tssys.IJacobian(time,*tssys.current_local_solution.get(),Xdot,shift,IJ,IJpre);
    
+    //tssys.IJacobian(time,X,Xdot,shift,IJ,IJpre);
     IJ.close();
     IJpre.close(); 
     STOP_LOG("IJacobian()", "PetscTSSolver");
     
     // ---------------------- view the matrix ijac ---------------------------
-    PetscViewer mat_viewer;
-    ierr = PetscPrintf(tssys.comm().get(),"View Mat info: \n"); CHKERRABORT(tssys.comm().get(), ierr);
-    ierr = PetscViewerCreate(tssys.comm().get(), &mat_viewer);  CHKERRABORT(tssys.comm().get(), ierr);
-    ierr = PetscViewerSetType(mat_viewer, PETSCVIEWERASCII);   CHKERRABORT(tssys.comm().get(), ierr);
-    ierr = MatView(ijac, mat_viewer);                          CHKERRABORT(tssys.comm().get(), ierr);
-    ierr = PetscViewerDestroy(&mat_viewer);                    CHKERRABORT(tssys.comm().get(), ierr);
+    //PetscViewer mat_viewer;
+    //ierr = PetscPrintf(tssys.comm().get(),"View Mat info: \n"); CHKERRABORT(tssys.comm().get(), ierr);
+    //ierr = PetscViewerCreate(tssys.comm().get(), &mat_viewer);  CHKERRABORT(tssys.comm().get(), ierr);
+    //ierr = PetscViewerSetType(mat_viewer, PETSCVIEWERASCII);   CHKERRABORT(tssys.comm().get(), ierr);
+    //ierr = MatView(ijac, mat_viewer);                          CHKERRABORT(tssys.comm().get(), ierr);
+    //ierr = PetscViewerDestroy(&mat_viewer);                    CHKERRABORT(tssys.comm().get(), ierr);
     // -----------------------------------------------------------------------
     
     return ierr;
@@ -346,8 +344,8 @@ void PetscTSSolver<T>::init ()
     // solution of the system
     PetscVector<Number>& X_sys = *cast_ptr<PetscVector<Number>*>(this->system().solution.get());
     // Set the IFunction
-    ierr = TSSetIFunction(_ts,X_sys.vec(), __libmesh_petsc_ts_ifunction, &this->system()); LIBMESH_CHKERR(ierr);
-    
+    //ierr = TSSetIFunction(_ts,X_sys.vec(), __libmesh_petsc_ts_ifunction, &this->system()); LIBMESH_CHKERR(ierr);
+    ierr = TSSetIFunction(_ts,NULL,__libmesh_petsc_ts_ifunction,&this->system());  
     // Set the IJacobian
     PetscMatrix<Number>& Jac_sys = *cast_ptr<PetscMatrix<Number>*>(this->system().matrix);
     if (this->system().request_matrix("Preconditioner"))
@@ -361,6 +359,7 @@ void PetscTSSolver<T>::init ()
 
     ierr = TSSetDuration(_ts, _max_steps, _max_time); LIBMESH_CHKERR(ierr);
     ierr = TSSetExactFinalTime(_ts,TS_EXACTFINALTIME_STEPOVER); LIBMESH_CHKERR(ierr);
+    //ierr = TSSetSolution(_ts,X_sys.vec());
 	ierr = TSSetInitialTimeStep(_ts, _initial_time, _dt); LIBMESH_CHKERR(ierr);
     ierr = TSSetFromOptions(_ts); LIBMESH_CHKERR(ierr);
     

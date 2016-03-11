@@ -45,7 +45,8 @@ void assemble_ifunction (libMesh::EquationSystems& es,
                          const std::string& system_name,
                          const Real& time,
                          const NumericVector<Number>& X,
-                         const NumericVector<Number>& Xdot);
+                         const NumericVector<Number>& Xdot,
+						 NumericVector<Number>& F);
 
 
 
