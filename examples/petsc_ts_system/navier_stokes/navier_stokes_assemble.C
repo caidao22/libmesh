@@ -69,7 +69,8 @@ void assemble_ifunction (libMesh::EquationSystems& es,
                          const std::string& system_name,
                          const Real& time,
                          const NumericVector<Number>& X,
-                         const NumericVector<Number>& Xdot)
+                         const NumericVector<Number>& Xdot,
+						 NumericVector<Number> &F)
 {
   PetscMPIInt rank,size;
   MPI_Comm_size(PETSC_COMM_WORLD,&size);
@@ -385,8 +386,9 @@ void assemble_ifunction (libMesh::EquationSystems& es,
     
     // add to the Residual vector
     // should we apply the zero filter to the solution/rhs before assemble?
-    GeomTools::zero_filter_dense_vector(Fe, 1e-10);
-    navier_stokes_system.rhs->add_vector (Fe, dof_indices);
+    //GeomTools::zero_filter_dense_vector(Fe, 1e-10);
+    //navier_stokes_system.rhs->add_vector (Fe, dof_indices);
+    F.add_vector (Fe, dof_indices);
     
     // --------------- output test ----------------
     //GeomTools::output_dense_vector(Fe, Fe.size());
@@ -686,7 +688,6 @@ void assemble_ijacobian (libMesh::EquationSystems& es,
     //GeomTools::output_dense_matrix(Ke);
     // --------------------------------------------
   } // end of element loop
-  std::cout<<"*********************** shift = "<<shift <<std::endl;
   //navier_stokes_system.matrix->close();
   
   // That's it.
@@ -998,10 +999,11 @@ void NSPetscTSSystem:: IFunction (Real time,
                              const NumericVector<Number>& Xdot,
                              NumericVector<Number>& F)
 {
-  this->rhs->zero();
-  assemble_ifunction (this->get_equation_systems(), "Navier-Stokes", time, X, Xdot);
-  this->rhs->close();
-  F = *this->rhs->clone();   // this is assignable!
+  //this->rhs->zero();
+  F.zero();
+  assemble_ifunction (this->get_equation_systems(), "Navier-Stokes", time, X, Xdot, F);
+  //this->rhs->close();
+  //F = *this->rhs->clone();   // this is assignable!
 }
 
 void NSPetscTSSystem::IJacobian (Real time,
@@ -1011,12 +1013,11 @@ void NSPetscTSSystem::IJacobian (Real time,
                                SparseMatrix<Number>& IJ,
                                SparseMatrix<Number>& IJpre)
 {
-  // call the user provided function
-  this->matrix->zero();
+  IJ.zero();
+  //this->matrix->zero(); // IJ points to this->matrix
   assemble_ijacobian (this->get_equation_systems(), "Navier-Stokes", time, shift, X, Xdot);
-  IJ =  (*(this->matrix) ); // this is NOT assignable!
-
-  this->matrix->close();
+  //IJ =  (*(this->matrix) ); // this is NOT assignable!
+  //this->matrix->close();
 }
 
 void NSPetscTSSystem::monitor (int  step, Real time,
