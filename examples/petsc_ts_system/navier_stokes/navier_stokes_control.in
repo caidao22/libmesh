@@ -14,14 +14,14 @@ extra_error_quadrature = 0
 viscosity = 1.0
 
 # time step incremental
-dt = 3.0
+dt = 1.0
 
 # time steps
 n_time_steps = 200
 
 # time discretization scheme:
 inital_time = 0.0
-final_time  = 1000.0
+final_time  = 200.0
 
 # periodic condition for velocity components
 periodicity = true
@@ -49,12 +49,12 @@ ZB = +50
 #nz_mesh = 20
 
 # finer mesh for test purpose
-#nx_mesh = 50
-#ny_mesh = 10
-#nz_mesh = 50
+nx_mesh = 50
+ny_mesh = 10
+nz_mesh = 50
 
 
 # fine mesh for simulation
-nx_mesh = 150
-ny_mesh = 30
-nz_mesh = 150
+#nx_mesh = 150
+#ny_mesh = 30
+#nz_mesh = 150

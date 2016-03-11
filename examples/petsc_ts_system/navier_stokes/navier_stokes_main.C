@@ -147,7 +147,6 @@ int main (int argc, char** argv)
   // across the default MPI communicator.
   //Mesh mesh(init.comm());
   SerialMesh mesh(init.comm());
-  mesh.print_info();
   // Use the MeshTools::Generation mesh generator to create a uniform
   // 2D grid on the square [-1,1]^2.  We instruct the mesh generator
   // to build a mesh of 8x8 \p Quad9 elements in 2D.  Building these

@@ -21,7 +21,7 @@ example_name=navier_stokes
 #mpirun -np 4 ./ns-opt -ksp_type gmres -ksp_gmres_restart 80 -pc_type asm -sub_pc_type ilu -log_summary
 
 # simple solve
-$PETSC_DIR/$PETSC_ARCH/bin/mpirun -np 2 ./ns-$METHOD -ts_type beuler -ksp_type preonly -pc_type lu -pc_factor_mat_solver_package superlu_dist
+mpirun -np 1 ./ns-$METHOD -ts_type beuler -ts_max_steps 1 -snes_max_it 1 -ksp_type preonly -pc_type lu -pc_factor_mat_solver_package mumps -snes_rtol 1e-12 -snes_monitor
 # -ts_monitor
 # -ksp_monitor -ksp_view
 
