@@ -107,8 +107,8 @@ void PetscTSSystem::solve ()
 // ---------------------------------------------------------------------
 // F(t,U,U_t)
 void PetscTSSystem::IFunction (Real time,
-                               const NumericVector<Number>& X,
-                               const NumericVector<Number>& Xdot,
+                               NumericVector<Number>& X,
+                               NumericVector<Number>& Xdot,
                                NumericVector<Number>& F)
 {
 }
@@ -117,8 +117,8 @@ void PetscTSSystem::IFunction (Real time,
 // ---------------------------------------------------------------------
 // compute the matrix dF/dU + a*dF/dU_t where F(t,U,U_t)
 void PetscTSSystem::IJacobian (Real time,
-                               const NumericVector<Number>& X,
-                               const NumericVector<Number>& Xdot,
+                               NumericVector<Number>& X,
+                               NumericVector<Number>& Xdot,
                                Real shift,
                                SparseMatrix<Number>& IJ,
                                SparseMatrix<Number>& IJpre)

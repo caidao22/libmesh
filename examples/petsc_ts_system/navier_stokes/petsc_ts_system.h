@@ -105,14 +105,14 @@ public:
   
   // F(t,U,U_t)
   virtual void IFunction (Real time,
-                          const NumericVector<Number>& X,
-                          const NumericVector<Number>& Xdot,
+                          NumericVector<Number>& X,
+                          NumericVector<Number>& Xdot,
                           NumericVector<Number>& F);
   
   // compute the matrix dF/dU + a*dF/dU_t where F(t,U,U_t)
   virtual void IJacobian (Real time,
-                          const NumericVector<Number>& X,
-                          const NumericVector<Number>& Xdot,
+                          NumericVector<Number>& X,
+                          NumericVector<Number>& Xdot,
                           Real shift,
                           SparseMatrix<Number>& IJ,
                           SparseMatrix<Number>& IJpre);
