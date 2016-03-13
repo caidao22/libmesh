@@ -43,9 +43,9 @@ void init_navier_stokes (EquationSystems& es,
 // assemble the IFunction for time-dependent navier-stokes: F(t,U,U_t)
 void assemble_ifunction (libMesh::EquationSystems& es,
                          const std::string& system_name,
-                         const Real& time,
-                         const NumericVector<Number>& X,
-                         const NumericVector<Number>& Xdot,
+                         Real& time,
+                         NumericVector<Number>& X,
+                         NumericVector<Number>& Xdot,
 						 NumericVector<Number>& F);
 
 
@@ -55,10 +55,10 @@ void assemble_ifunction (libMesh::EquationSystems& es,
 // assemble the IJacobian for time-dependent navier-stokes: dF/dU + a*dF/dU_t
 void assemble_ijacobian (libMesh::EquationSystems& es,
                          const std::string& system_name,
-                         const Real& time,
-                         const Real& shift,
-                         const NumericVector<Number>& X,
-                         const NumericVector<Number>& Xdot);
+                         Real& time,
+                         Real& shift,
+                         NumericVector<Number>& X,
+                         NumericVector<Number>& Xdot);
 
 
 
@@ -111,15 +111,15 @@ class NSPetscTSSystem : public PetscTSSystem
 public:
   using PetscTSSystem::PetscTSSystem;
   void IFunction (Real time,
-                  const NumericVector<Number>& X,
-                  const NumericVector<Number>& Xdot,
+                  NumericVector<Number>& X,
+                  NumericVector<Number>& Xdot,
                   NumericVector<Number>& F);
 
 // ---------------------------------------------------------------------
 // compute the matrix dF/dU + a*dF/dU_t where F(t,U,U_t)
   void IJacobian (Real time,
-                  const NumericVector<Number>& X,
-                  const NumericVector<Number>& Xdot,
+                  NumericVector<Number>& X,
+                  NumericVector<Number>& Xdot,
                   Real shift,
                   SparseMatrix<Number>& IJ,
                   SparseMatrix<Number>& IJpre);

@@ -146,17 +146,17 @@ extern "C"
 
     // Localize the potentially parallel vector
     UniquePtr<NumericVector<Number> > local_xdot = NumericVector<Number>::build(tssys.comm());
-    local_xdot->init(tssys.current_local_solution->size(),false);
+    local_xdot->init(Xdot.size(),false);
     Xdot.localize (*local_xdot, tssys.get_dof_map().get_send_list());
 
     // evaluate the ifunction
     tssys.IFunction(time,*tssys.current_local_solution.get(),*local_xdot,F);
-   
+
     //tssys.IFunction(time,X,Xdot,F);
 
-    F.close();    
+    F.close();
     STOP_LOG("IFunction()", "PetscTSSolver");
-    
+
     // ---------------------- view the vector f ---------------------------
     //PetscViewer vec_viewer;
     //ierr = PetscPrintf(tssys.comm().get() ,"View Vec info: \n");

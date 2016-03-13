@@ -67,9 +67,9 @@ void init_navier_stokes (libMesh::EquationSystems& es,
 // ============================================================================================
 void assemble_ifunction (libMesh::EquationSystems& es,
                          const std::string& system_name,
-                         const Real& time,
-                         const NumericVector<Number>& X,
-                         const NumericVector<Number>& Xdot,
+                         Real& time,
+                         NumericVector<Number>& X,
+                         NumericVector<Number>& Xdot,
 						 NumericVector<Number> &F)
 {
   PetscMPIInt rank,size;
@@ -377,24 +377,22 @@ void assemble_ifunction (libMesh::EquationSystems& es,
         Fe(i) += Me(i,j)*Vedot(j) + Ke(i,j)*Ve(j);
     }
     
-    
     // At this point the interior element integration has been completed.
     // Now, we impose boundary conditions via the penalty method.
     // *** only Fe is changed, Ke is an auxiliary matrix.
     //apply_bc_by_penalty(mesh, elem, time,"vector", Kuu, Kvv, Kww, Kpp, Fu, Fv, Fw, Fp);
     
-    
     // add to the Residual vector
     // should we apply the zero filter to the solution/rhs before assemble?
-    //GeomTools::zero_filter_dense_vector(Fe, 1e-10);
-    //navier_stokes_system.rhs->add_vector (Fe, dof_indices);
-    F.add_vector (Fe, dof_indices);
+    GeomTools::zero_filter_dense_vector(Fe, 1e-10);
+    navier_stokes_system.rhs->add_vector (Fe, dof_indices);
+    //F.add_vector (Fe, dof_indices);
     
     // --------------- output test ----------------
     //GeomTools::output_dense_vector(Fe, Fe.size());
     // --------------------------------------------
   } // end of element loop
-//  navier_stokes_system.rhs->close();
+  navier_stokes_system.rhs->close();
 
   // That's it.
   return;
@@ -408,10 +406,10 @@ void assemble_ifunction (libMesh::EquationSystems& es,
 // ============================================================================================
 void assemble_ijacobian (libMesh::EquationSystems& es,
                          const std::string& system_name,
-                         const Real& time,
-                         const Real& shift,
-                         const NumericVector<Number>& X,
-                         const NumericVector<Number>& Xdot)
+                         Real& time,
+                         Real& shift,
+                         NumericVector<Number>& X,
+                         NumericVector<Number>& Xdot)
 {
   // It is a good idea to make sure we are assembling the proper system.
   libmesh_assert_equal_to (system_name, "Navier-Stokes");
@@ -688,7 +686,7 @@ void assemble_ijacobian (libMesh::EquationSystems& es,
     //GeomTools::output_dense_matrix(Ke);
     // --------------------------------------------
   } // end of element loop
-  //navier_stokes_system.matrix->close();
+  navier_stokes_system.matrix->close();
   
   // That's it.
   return;
@@ -995,29 +993,29 @@ Real boundary_pressure(const Point& pt,
 
 
 void NSPetscTSSystem:: IFunction (Real time,
-                             const NumericVector<Number>& X,
-                             const NumericVector<Number>& Xdot,
-                             NumericVector<Number>& F)
+                                  NumericVector<Number>& X,
+                                  NumericVector<Number>& Xdot,
+                                  NumericVector<Number>& F)
 {
-  //this->rhs->zero();
-  F.zero();
+  this->rhs->zero();
+  //F.zero();
   assemble_ifunction (this->get_equation_systems(), "Navier-Stokes", time, X, Xdot, F);
-  //this->rhs->close();
-  //F = *this->rhs->clone();   // this is assignable!
+  this->rhs->close();
+  F = *this->rhs->clone();   // this is assignable!
 }
 
 void NSPetscTSSystem::IJacobian (Real time,
-                               const NumericVector<Number>& X,
-                               const NumericVector<Number>& Xdot,
-                               Real shift,
-                               SparseMatrix<Number>& IJ,
-                               SparseMatrix<Number>& IJpre)
+                                 NumericVector<Number>& X,
+                                 NumericVector<Number>& Xdot,
+                                 Real shift,
+                                 SparseMatrix<Number>& IJ,
+                                 SparseMatrix<Number>& IJpre)
 {
-  IJ.zero();
-  //this->matrix->zero(); // IJ points to this->matrix
+  //IJ.zero();
+  this->matrix->zero(); // IJ points to this->matrix
   assemble_ijacobian (this->get_equation_systems(), "Navier-Stokes", time, shift, X, Xdot);
-  //IJ =  (*(this->matrix) ); // this is NOT assignable!
-  //this->matrix->close();
+  IJ =  (*(this->matrix) ); // this is NOT assignable!
+  this->matrix->close();
 }
 
 void NSPetscTSSystem::monitor (int  step, Real time,

@@ -49,12 +49,12 @@ ZB = +50
 #nz_mesh = 20
 
 # finer mesh for test purpose
-#nx_mesh = 50
-#ny_mesh = 10
-#nz_mesh = 50
+nx_mesh = 50
+ny_mesh = 10
+nz_mesh = 50
 
 
 # fine mesh for simulation
-nx_mesh = 150
-ny_mesh = 30
-nz_mesh = 150
+#nx_mesh = 150
+#ny_mesh = 30
+#nz_mesh = 150
