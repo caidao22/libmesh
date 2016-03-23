@@ -39,18 +39,18 @@
 
 namespace libMesh
 {
-/** 
+/**
  * Allow users access to these functions in case they want to reuse them.
  * Note that users shouldn't need access to these most of the time
  * as they are used internally by this object.
  */
 extern "C"
 {
-  PetscErrorCode __libmesh_petsc_ts_monitor(TS ts, PetscInt step, PetscReal time, Vec x, void *ctx);
-  PetscErrorCode __libmesh_petsc_ts_rhsfunction (TS ts, PetscReal t, Vec x, Vec r, void *ctx);
-  PetscErrorCode __libmesh_petsc_ts_rhsjacobian (TS ts, PetscReal t, Vec x, Mat jac, Mat jacpre, void *ctx);
-  PetscErrorCode __libmesh_petsc_ts_ifunction (TS ts, PetscReal t, Vec x, Vec xdot, Vec f, void *ctx);
-  PetscErrorCode __libmesh_petsc_ts_ijacobian (TS ts, PetscReal t, Vec x, Vec xdot, PetscReal shift,Mat ijac, Mat ijacpre, void *ctx);
+  PetscErrorCode libmesh_petsc_ts_monitor(TS ts, PetscInt step, PetscReal time, Vec x, void *ctx);
+  PetscErrorCode libmesh_petsc_ts_rhsfunction (TS ts, PetscReal t, Vec x, Vec r, void *ctx);
+  PetscErrorCode libmesh_petsc_ts_rhsjacobian (TS ts, PetscReal t, Vec x, Mat jac, Mat jacpre, void *ctx);
+  PetscErrorCode libmesh_petsc_ts_ifunction (TS ts, PetscReal t, Vec x, Vec xdot, Vec f, void *ctx);
+  PetscErrorCode libmesh_petsc_ts_ijacobian (TS ts, PetscReal t, Vec x, Vec xdot, PetscReal shift,Mat ijac, Mat ijacpre, void *ctx);
 }
 
 // Forward Declarations
@@ -59,7 +59,7 @@ template <typename T> class SparseMatrix;
 template <typename T> class NumericVector;
 template <typename T> class PetscMatrix;
 template <typename T> class PetscVector;
-  
+
 /**
  * This class provides a uniform interface for PETSc TS solvers that are
  * compatible with the \p libMesh.
@@ -76,7 +76,7 @@ public:
    * The type of system
    */
   typedef PetscTSSystem sys_type;
-  
+
   /**
   * Constructor.
   * Name will be used as the options prefix.
@@ -88,12 +88,12 @@ public:
   * Destructor.
   */
   ~PetscTSSolver ();
-  
+
   /**
    * Builds a \p PetscTSSolver
    */
   static UniquePtr<PetscTSSolver<T> > build(sys_type& s);
-  
+
   /**
   * Initialize data structures if not done so already.
   */
@@ -104,7 +104,7 @@ public:
    * initialized, false otherwise.
    */
   bool initialized () const { return _initialized; }
-  
+
   /**
   * Release all memory and clear data structures.
   */
@@ -116,17 +116,17 @@ public:
   * functionality to configure the underlying TS.
   */
   TS ts() { this->init(); return _ts; }
-  
+
   /**
    * @returns a constant reference to the system we are solving.
    */
   const sys_type & system () const { return _system; }
-  
+
   /**
    * @returns a writeable reference to the system we are solving.
    */
   sys_type & system () { return _system; }
-  
+
   /**
   * Set the time range [t0, max_t](initial time and maximum time)
   */
@@ -138,8 +138,10 @@ public:
   */
   void set_timestep(const Real dt, const unsigned int steps)
   { _dt = dt; _max_steps = steps; }
-  
+
   // ... and other functions that set the parameters of the underlying TS.
+  void set_adjoint(const bool do_adjoint)
+  { _do_adjoint = do_adjoint; }
 
   /**
   * Call the Petsc TS solver to integrate from initial to final time.
@@ -150,7 +152,18 @@ public:
 //  * Call the Petsc TS solver to take one step.
 //  */
 //  void step();
-  
+
+  /**
+  * Initialize adjoint solver
+  */
+  void adjoint_init();
+
+  /**
+  * Call the Petsc TSAdjoint solver to integrate from final to initial time for sensitivities.
+  */
+  void adjoint_solve ();
+
+
   /**
   * Returns the currently-available (or most recently obtained, if the TS object has
   * been destroyed) convergence reason.  Refer to PETSc docs for the meaning of different
@@ -175,12 +188,12 @@ protected:
   * Name of the object; it is also used to build the PETSc options prefix: <name>_
   */
   const char* _name;
-  
+
   /**
   *  init() has been called and the solver is ready to use.
   */
   bool _initialized;
-  
+
   /**
   * Store the reason for TS convergence/divergence for use even after the _ts
   * has been cleared. Note that
@@ -192,22 +205,22 @@ protected:
    * the inital time for the ts solver
    */
   PetscReal _initial_time;
-  
+
   /**
    * the duration time for the ts solver
    */
   PetscReal _max_time;
-  
+
   /**
    * the size of the timestep for the ts solver
    */
   PetscReal _dt;
-  
+
   /**
    * the max time step for the ts solver
    */
   PetscInt _max_steps;
-  
+
   /**
   * Stores the total number of linear iterations from the last solve.
   */
@@ -218,16 +231,22 @@ protected:
   */
   PetscInt _current_nonlinear_iteration_number;
 
+  bool _do_adjoint;
+
+  PetscInt _n_cost_functions;
+
+  std::vector<Vec> _lambda;
+
   // Current timestep value should go into _tsys, if anywhere.
 //  PetscVector<Number> *_R;
 //  PetscMatrix<Number> *_J, *_Jpre;
 
   // friend class
-  friend PetscErrorCode __libmesh_petsc_ts_rhsfunction (TS ts, PetscReal t, Vec x, Vec r, void *ctx);
-  friend PetscErrorCode __libmesh_petsc_ts_rhsjacobian (TS ts, PetscReal t, Vec x, Mat jac, Mat jacpre, void *ctx);
-  friend PetscErrorCode __libmesh_petsc_ts_ifunction (TS ts, PetscReal t, Vec x, Vec xdot, Vec f, void *ctx);
-  friend PetscErrorCode __libmesh_petsc_ts_ijacobian (TS ts, PetscReal t, Vec x, Vec xdot, PetscReal shift,Mat ijac, Mat ijacpre, void *ctx);
-  friend PetscErrorCode __libmesh_petsc_ts_monitor(TS ts, PetscInt step, PetscReal time, Vec x, void *ctx);
+  friend PetscErrorCode libmesh_petsc_ts_rhsfunction (TS ts, PetscReal t, Vec x, Vec r, void *ctx);
+  friend PetscErrorCode libmesh_petsc_ts_rhsjacobian (TS ts, PetscReal t, Vec x, Mat jac, Mat jacpre, void *ctx);
+  friend PetscErrorCode libmesh_petsc_ts_ifunction (TS ts, PetscReal t, Vec x, Vec xdot, Vec f, void *ctx);
+  friend PetscErrorCode libmesh_petsc_ts_ijacobian (TS ts, PetscReal t, Vec x, Vec xdot, PetscReal shift,Mat ijac, Mat ijacpre, void *ctx);
+  friend PetscErrorCode libmesh_petsc_ts_monitor(TS ts, PetscInt step, PetscReal time, Vec x, void *ctx);
 
 };  // end of class PetscTSSolver
 

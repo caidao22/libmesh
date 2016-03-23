@@ -126,7 +126,7 @@ int main (int argc, char** argv)
   const Real initial_time           = input_file("initial_time", 0.0);
   const Real final_time             = input_file("final_time", 10.0);
   const bool periodicity            = input_file("periodicity", true);   // periodic bc
-  
+
 //  const bool write_es               = input_file("write_es", true);      // write out eqn-system
 //  const unsigned int write_interval = input_file("write_interval", 1);
   const Real XA = input_file("XA", -1.);  const Real XB = input_file("XB", +1.);
@@ -135,7 +135,7 @@ int main (int argc, char** argv)
   const unsigned int nx_mesh = input_file("nx_mesh", 10);
   const unsigned int ny_mesh = input_file("ny_mesh", 10);
   const unsigned int nz_mesh = input_file("nz_mesh", 10);
-  
+
   // output the mesh and domain information
   std::cout << "nx_mesh = " << nx_mesh <<", Lx = " << XB-XA <<std::endl
             << "ny_mesh = " << ny_mesh <<", Ly = " << YB-YA <<std::endl
@@ -169,15 +169,15 @@ int main (int argc, char** argv)
   EquationSystems equation_systems (mesh);
 
   // Creates a transient system named "Navier-Stokes"
-  NSPetscTSSystem &system = equation_systems.add_system<NSPetscTSSystem> ("Navier-Stokes");
+  NSPetscTSSystem &navier_stokes_system = equation_systems.add_system<NSPetscTSSystem> ("Navier-Stokes");
 
   // Add the variables "u" & "v" to "Navier-Stokes".  They
   // will be approximated using second-order approximation.
   unsigned int u_var = 0, v_var = 0, w_var = 0, p_var = 0;
-  u_var = system.add_variable ("u", SECOND);
-  v_var = system.add_variable ("v", SECOND);
-  if(dim==3)w_var = system.add_variable ("w", SECOND);
-  p_var = system.add_variable ("p", FIRST);
+  u_var = navier_stokes_system.add_variable ("u", SECOND);
+  v_var = navier_stokes_system.add_variable ("v", SECOND);
+  if(dim==3)w_var = navier_stokes_system.add_variable ("w", SECOND);
+  p_var = navier_stokes_system.add_variable ("p", FIRST);
 
   // Give the system a pointer to the matrix assembly function.
 //  system.attach_assemble_function (assemble_navier_stokes);
@@ -194,20 +194,21 @@ int main (int argc, char** argv)
   equation_systems.parameters.set<Real>        ("ZA_boundary") = ZA;
   equation_systems.parameters.set<Real>        ("ZB_boundary") = ZB;
   equation_systems.parameters.set<bool>        ("periodicity") = periodicity;
-  
-  
+
+
   equation_systems.parameters.set<Real>        ("dt")          = dt;
-  equation_systems.parameters.set<Real>        ("time steps")  = n_timesteps;
+  equation_systems.parameters.set<unsigned int>("time steps")  = n_timesteps;
   equation_systems.parameters.set<Real>        ("initial time")= initial_time;
   equation_systems.parameters.set<Real>        ("final time")  = final_time;
 
+  equation_systems.parameters.set<bool>        ("adjoint")  = true;
   // add periodic boundary conditions for u v w, but not for p
   if (periodicity) //periodicity
   {
     PeriodicBoundary horz(RealVectorValue(XB-XA, 0., 0.));
     horz.set_variable(u_var);
     horz.set_variable(v_var);
-    
+
     // is this boundary number still true for 3D?
     if(dim==2)
     {
@@ -220,8 +221,8 @@ int main (int argc, char** argv)
       horz.myboundary = 4;
       horz.pairedboundary = 2;
     } // end if
-    
-    DofMap& dof_map = system.get_dof_map();
+
+    DofMap& dof_map = navier_stokes_system.get_dof_map();
     dof_map.add_periodic_boundary(horz);
     std::cout<<"========================= periodic bc is applied ========================"<<std::endl;
   }
@@ -230,27 +231,42 @@ int main (int argc, char** argv)
 
   // Prints information about the system to the screen.
   equation_systems.print_info();
-  
+
   // Create a performance-logging object for this example
   //PerfLog perf_log("Navier Stokes Equation");
 
   // Get a reference to the Stokes system to use later.
   // is this necessary, because it is the same as the \p system above
-  NSPetscTSSystem&  navier_stokes_system = equation_systems.get_system<NSPetscTSSystem>("Navier-Stokes");
-
+  // NSPetscTSSystem&  navier_stokes_system1 = equation_systems.get_system<NSPetscTSSystem>("Navier-Stokes");
 
   // Petsc TS solver
   PetscTSSolver<Number> ts_solver(navier_stokes_system);
   ts_solver.set_duration(initial_time, final_time);
   ts_solver.set_timestep(dt, n_timesteps);
-  
-//  navier_stokes_system.solve();
+  ts_solver.set_adjoint(true);
+  //navier_stokes_system.solve();
+
   ts_solver.init();
   ts_solver.solve();
-  
-  // All done.
+
+  //NumericVector<Number> & lambda = navier_stokes_system.add_adjoint_solution(1);
+
+  //navier_stokes_system.adjoint_init();
+  //navier_stokes_system.adjoint_solve();
+  //ts_solver.adjoint_init();
+  //ts_solver.adjoint_solve();
+/*
+#ifdef LIBMESH_HAVE_EXODUS_API
+  // write out the equation systems
+  std::string exodus_filename("ns_system_adjoint.e");
+  ExodusII_IO(navier_stokes_system.get_mesh()).write_equation_systems (exodus_filename,navier_stokes_system.get_equation_systems());
+  // output options from transient ex1
+  ExodusII_IO exodus_IO(navier_stokes_system.get_mesh());
+  exodus_IO.append(true);
+  exodus_IO.write_timestep (exodus_filename, this->get_equation_systems(),step+1,time);
+#endif // #ifdef LIBMESH_HAVE_EXODUS_API
+*/
   return 0;
-  
 }
 
 
