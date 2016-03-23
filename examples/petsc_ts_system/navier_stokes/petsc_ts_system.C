@@ -11,101 +11,60 @@
 namespace libMesh
 {
 
-// ---------------------------------------------------------------------
 PetscTSSystem::PetscTSSystem(EquationSystems& es,
                              const std::string& name_in,
                              const unsigned int number_in):
   Parent   (es, name_in, number_in)
 {
-  // do nothing right now
 }
 
-
-// ---------------------------------------------------------------------
 PetscTSSystem::~PetscTSSystem ()
 {
-  // Clear data
   this->clear();
 }
 
-
-// ---------------------------------------------------------------------
 void PetscTSSystem::clear ()
 {
-  // clear the parent data
   Parent::clear();
 }
 
-  
-// ---------------------------------------------------------------------
 void PetscTSSystem::init ()
 {
-  // initialize parent data
   Parent::init();
 }
 
-
-// ---------------------------------------------------------------------
 void PetscTSSystem::reinit ()
 {
-  // re-initialize the ts solver interface
+  // Re-initialize the TS solver interface
   ts_solver->clear();
-  
-  // initialize parent data
+
+  // Initialize parent data
   Parent::reinit();
 }
 
-
-// ---------------------------------------------------------------------
-void PetscTSSystem::set_solver_parameters ()
-{
-  // Get a reference to the EquationSystems
-  const EquationSystems& es = this->get_equation_systems();
-  
-  // Get the user-specifiied ts solver tolerances
-  const Real   t0 = es.parameters.get<Real>("initial time");
-  const Real maxt = es.parameters.get<Real>("final time");
-  const Real   dt = es.parameters.get<Real>("dt");
-  const unsigned int nsteps = es.parameters.get<unsigned int>("time steps");
-
-  printf("inital tme = %f, final time = %f, dt = %f, time steps = %u\n",
-         t0, maxt, dt, nsteps);
-  
-  // set the parameters for ts solver
-  if (ts_solver.get())
-  {
-    ts_solver->set_duration(t0, maxt);
-    ts_solver->set_timestep (dt,nsteps);
-  }
-}
-  
-// ---------------------------------------------------------------------
 void PetscTSSystem::solve ()
 {
   // Log how long the nonlinear solve takes.
   START_LOG("solve()", "PetscTSSystem");
-  
-  // what parameters can we set for ts_solver?
-   this->set_solver_parameters();
-  
-  // there is solver constructed through build(), but not init()
+
+  // What parameters can we set for TS solver? Copy them to TS solver.
+  this->set_solver_parameters();
+
+  // There is solver constructed through build(), but not init()
   if (!ts_solver.get())
     ts_solver->init();
-  
-  // call ts solver to solve the system
+
+  // Call TS solver to solve the system
   ts_solver->solve();
 
-  
   // Stop logging the nonlinear solve
   STOP_LOG("solve()", "PetscTSSystem");
-  
+
   // Update the system after the solve
  // this->update();
 }
 
-
-// ---------------------------------------------------------------------
-// F(t,U,U_t)
+// F(t,U,U_t) in DAE form. Required by PETSc implicit TS methods
 void PetscTSSystem::IFunction (Real time,
                                NumericVector<Number>& X,
                                NumericVector<Number>& Xdot,
@@ -113,9 +72,7 @@ void PetscTSSystem::IFunction (Real time,
 {
 }
 
-
-// ---------------------------------------------------------------------
-// compute the matrix dF/dU + a*dF/dU_t where F(t,U,U_t)
+// Compute the matrix dF/dU + a*dF/dU_t where F(t,U,U_t) is IFunction
 void PetscTSSystem::IJacobian (Real time,
                                NumericVector<Number>& X,
                                NumericVector<Number>& Xdot,
@@ -125,10 +82,59 @@ void PetscTSSystem::IJacobian (Real time,
 {
 }
 
-
-// ---------------------------------------------------------------------
-void PetscTSSystem::monitor (int  step, Real time,
+void PetscTSSystem::monitor (int step, Real time,
                              NumericVector<Number>& X)
 {
 }
+
+// Set up adjoint solver
+void PetscTSSystem::adjoint_init()
+{
+  START_LOG("adjoint_init()", "PetscTSSystem");
+  ts_solver->adjoint_init();
+  STOP_LOG("adjoint_init()", "PetscTSSystem");
+}
+
+void PetscTSSystem::adjoint_solve ()
+{
+  // Log how long the adjoint solve takes.
+  START_LOG("adjoint_solve()", "PetscTSSystem");
+
+  // call ts solver to solve the system
+  ts_solver->adjoint_solve();
+
+
+  // Stop logging the nonlinear solve
+  STOP_LOG("adjoint_solve()", "PetscTSSystem");
+
+  // Update the system after the solve
+ // this->update();
+}
+
+// Override existing settings for TS solver.
+void PetscTSSystem::set_solver_parameters ()
+{
+  // Get a reference to the EquationSystems
+  const EquationSystems& es = this->get_equation_systems();
+
+  // Get the user-specified parameters.
+  const Real   t0 = es.parameters.get<Real>("initial time");
+  const Real maxt = es.parameters.get<Real>("final time");
+  const Real   dt = es.parameters.get<Real>("dt");
+  const unsigned int nsteps = es.parameters.get<unsigned int>("time steps");
+  const bool do_adjoint = es.parameters.get<bool>("adjoint");
+
+  printf("initial time = %f, final time = %f, dt = %f, time steps = %u\n",
+         t0, maxt, dt, nsteps);
+
+  // Set the parameters for TS solver
+  if (ts_solver.get() )
+  {
+    ts_solver->set_duration(t0, maxt);
+    ts_solver->set_timestep (dt,nsteps);
+    std::cout<<"do adjoint="<<do_adjoint<<std::endl;
+    ts_solver->set_adjoint(do_adjoint);
+  }
+}
+
 } // end of namespace

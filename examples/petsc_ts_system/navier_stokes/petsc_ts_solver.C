@@ -43,7 +43,7 @@ extern "C"
 
   // this function is called by PETSc at the end of each step
   PetscErrorCode
-  __libmesh_petsc_ts_monitor (TS ts, PetscInt step, PetscReal time, Vec x, void *ctx)
+  libmesh_petsc_ts_monitor (TS ts, PetscInt step, PetscReal time, Vec x, void *ctx)
   {
     START_LOG("Monitor()", "PetscTSSolver");
 
@@ -65,7 +65,7 @@ extern "C"
   /*
   // this function is called by TS to evaluate the rhs function at X
   PetscErrorCode
-  __libmesh_petsc_ts_rhsfunction (TS ts, PetscReal time, Vec x, Vec r, void *ctx)
+  libmesh_petsc_ts_rhsfunction (TS ts, PetscReal time, Vec x, Vec r, void *ctx)
   {
     START_LOG("RHSFunction()", "PetscTSSolver");
 
@@ -86,7 +86,7 @@ extern "C"
 
   // this function is called by PETSc to evaluate the RHS Jacobian at X ant time t
   PetscErrorCode
-  __libmesh_petsc_ts_rhsjacobian(TS ts, PetscReal time, Vec x, Mat jac, Mat jacpre, void *ctx)
+  libmesh_petsc_ts_rhsjacobian(TS ts, PetscReal time, Vec x, Mat jac, Mat jacpre, void *ctx)
   {
     START_LOG("RHSJacobian()", "PetscTSSolver");
     PetscErrorCode ierr=0;
@@ -100,40 +100,40 @@ extern "C"
     PetscVector<Number> X     (x,     tssys->comm());
     PetscMatrix<Number> Jac   (jac,   tssys->comm());
     PetscMatrix<Number> Jacpre(jacpre,tssys->comm());
-    
+
     // What do we do if jacpre is NULL?  Should we switch to passing
     // PetscVector* and PetscMatrix* to TSSystem::RHSJacobian() etc.?
     tssys->RHSJacobian(time,X,Jac,Jacpre);
-    
+
     STOP_LOG("RHSJacobian()", "PetscTSSolver");
     return ierr;
   }
   */
-  
+
   PetscErrorCode
-  __libmesh_petsc_ts_ifunction (TS ts, PetscReal time, Vec x, Vec xdot, Vec f, void *ctx)
+  libmesh_petsc_ts_ifunction (TS ts, PetscReal time, Vec x, Vec xdot, Vec f, void *ctx)
   {
     START_LOG("IFunction()", "PetscTSSolver");
     PetscErrorCode ierr = 0;
-    
+
     libmesh_assert(x);
     libmesh_assert(xdot);
     libmesh_assert(f);
     libmesh_assert(ctx);
-    
+
     // No way to safety-check this cast, since we got a void*...
     PetscTSSystem & tssys = *(static_cast<PetscTSSystem *>(ctx));
 
-	PetscVector<Number> X     (x,     tssys.comm());
+    PetscVector<Number> X     (x,     tssys.comm());
     PetscVector<Number> Xdot  (xdot,  tssys.comm());
     PetscVector<Number> F     (f,     tssys.comm());
-    
+
     // Use the system's update() to get a good local version of the
     // parallel solution.  This operation does not modify the incoming
     // "x" vector, it only localizes information from "x" into
     // sys.current_local_solution.
-    PetscVector<Number> & X_sys = *cast_ptr<PetscVector<Number> *>(tssys.solution.get());   
-	X.swap(X_sys);
+    PetscVector<Number> & X_sys = *cast_ptr<PetscVector<Number> *>(tssys.solution.get());
+    X.swap(X_sys);
     tssys.update();
     X.swap(X_sys);
     // Enforce constraints (if any) exactly on the
@@ -167,22 +167,22 @@ extern "C"
     // --------------------------------------------------------------------
     return ierr;
   }
-  
+
   //---------------------------------------------------------------
   PetscErrorCode
-  __libmesh_petsc_ts_ijacobian (TS ts, PetscReal time, Vec x, Vec xdot, PetscReal shift,Mat ijac, Mat ijacpre, void *ctx)
+  libmesh_petsc_ts_ijacobian (TS ts, PetscReal time, Vec x, Vec xdot, PetscReal shift,Mat ijac, Mat ijacpre, void *ctx)
   {
     START_LOG("IJacobian()", "PetscTSSolver");
     PetscErrorCode ierr = 0;
-    
+
     libmesh_assert(x);
     libmesh_assert(xdot);
     libmesh_assert(ijac);
     libmesh_assert(ctx);
-    
+
     // No way to safety-check this cast, since we got a void*...
     PetscTSSystem & tssys = *(static_cast<PetscTSSystem *>(ctx));
-    
+
     PetscVector<Number> X     (x,       tssys.comm());
     PetscVector<Number> Xdot  (xdot,    tssys.comm());
     PetscMatrix<Number> IJ    (ijac,    tssys.comm());
@@ -202,7 +202,7 @@ extern "C"
     // not locked by debug-enabled PETSc the way that "x" is.
     //tssys.get_dof_map().enforce_constraints_exactly(tssys, tssys.current_local_solution.get());
     //if (solver->_zero_out_jacobian)
-    //  IJpre.zero();             
+    //  IJpre.zero();
     // evaluate the matrices
     tssys.IJacobian(time,*tssys.current_local_solution.get(),Xdot,shift,IJ,IJpre);
    
@@ -251,8 +251,8 @@ PetscTSSolver<T>::~PetscTSSolver ()
 {
   this->clear ();
 }
-  
-  
+
+
 // PetscTSSolver members
 #if defined(LIBMESH_HAVE_PETSC)
 template <typename T>
@@ -277,7 +277,7 @@ void PetscTSSolver<T>::clear ()
   if (this->_initialized)
   {
     this->_initialized = false;
-    
+
     PetscErrorCode ierr = 0;
     ierr = TSDestroy(&_ts);   LIBMESH_CHKERR(ierr);
     delete _name;
@@ -288,16 +288,19 @@ void PetscTSSolver<T>::clear ()
     // Reset the nonlinear iteration counter.  This information is only relevant
     // *during* the solve().  After the solve is completed it should return to
     // the default value of 0.
-    _initial_time = 0.;
-    _max_time     = 0.;
-    _dt           = 0.;
-    _max_steps    = 0;
+    _initial_time                       = 0.;
+    _max_time                           = 0.;
+    _dt                                 = 0.;
+    _max_steps                          = 0;
     _n_linear_iterations                = 0;
     _current_nonlinear_iteration_number = 0;
+    _n_cost_functions                   = 0;
+    _do_adjoint                         = false;
   }
 }
 
-
+// Initialize the data structures for TS solver.
+// It is automatically called in PetscTSSystem::solve() before TSSolve is called.
 template <typename T>
 void PetscTSSolver<T>::init ()
 {
@@ -312,7 +315,7 @@ void PetscTSSolver<T>::init ()
     // Create TS
     ierr = TSCreate(this->comm().get(), &_ts); LIBMESH_CHKERR(ierr);
     ierr = TSSetProblemType(_ts, TS_NONLINEAR); LIBMESH_CHKERR(ierr);
-    
+
     // Attaching a DM to TS.
     DM dm;
     ierr = DMCreate(this->comm().get(), &dm); LIBMESH_CHKERR(ierr);
@@ -330,7 +333,7 @@ void PetscTSSolver<T>::init ()
     ierr = TSSetDM(this->_ts, dm); LIBMESH_CHKERR(ierr);
     // TS now owns the reference to dm
     ierr = DMDestroy(&dm); LIBMESH_CHKERR(ierr);
-    ierr = TSMonitorSet(_ts, __libmesh_petsc_ts_monitor, &this->system(), NULL); LIBMESH_CHKERR(ierr);
+    ierr = TSMonitorSet(_ts, libmesh_petsc_ts_monitor, &this->system(), NULL); LIBMESH_CHKERR(ierr);
 
     // Build the vector and matrices
     // TODO: how can we ensure it's a PetscVector*? Is cast_ptr enough?
@@ -341,41 +344,52 @@ void PetscTSSolver<T>::init ()
 //    SparseMatrix<Number>  *Jpre = SparseMatrix<Number>::build(this->comm()).release();
 //    _Jpre = cast_ptr<PetscMatrix<Number>*>(Jpre);
 
-    // solution of the system
-    PetscVector<Number>& X_sys = *cast_ptr<PetscVector<Number>*>(this->system().solution.get());
-    // Set the IFunction
-    //ierr = TSSetIFunction(_ts,X_sys.vec(), __libmesh_petsc_ts_ifunction, &this->system()); LIBMESH_CHKERR(ierr);
-    ierr = TSSetIFunction(_ts,NULL,__libmesh_petsc_ts_ifunction,&this->system());  
+    // Use the solution of the system as the working vector. (This is not safe since the system may be modified when PETSc has the control)
+    // PetscVector<Number>& X_sys = *cast_ptr<PetscVector<Number>*>(this->system().solution.get());
+    //ierr = TSSetIFunction(_ts,X_sys.vec(), libmesh_petsc_ts_ifunction, &this->system()); LIBMESH_CHKERR(ierr);
+    //ierr = TSSetSolution(_ts,X_sys.vec());
+
+    // PETSc creates the working vector.
+    // Thus the working vector can be cast into PETSc vector safely.
+    ierr = TSSetIFunction(_ts,NULL,libmesh_petsc_ts_ifunction,&this->system());
+
     // Set the IJacobian
     PetscMatrix<Number>& Jac_sys = *cast_ptr<PetscMatrix<Number>*>(this->system().matrix);
+
     if (this->system().request_matrix("Preconditioner"))
     {
       this->system().request_matrix("Preconditioner")->close();
       PetscMatrix<Number>& PC_sys = *cast_ptr<PetscMatrix<Number>*>( this->system().request_matrix("Preconditioner") );
-      ierr = TSSetIJacobian(_ts,Jac_sys.mat(),PC_sys.mat(),__libmesh_petsc_ts_ijacobian,&this->system()); LIBMESH_CHKERR(ierr);
+      ierr = TSSetIJacobian(_ts,Jac_sys.mat(),PC_sys.mat(),libmesh_petsc_ts_ijacobian,&this->system()); LIBMESH_CHKERR(ierr);
     }
     else
-      ierr = TSSetIJacobian(_ts,Jac_sys.mat(),Jac_sys.mat(),__libmesh_petsc_ts_ijacobian,&this->system()); LIBMESH_CHKERR(ierr);
+    {
+      ierr = TSSetIJacobian(_ts,Jac_sys.mat(),Jac_sys.mat(),libmesh_petsc_ts_ijacobian,&this->system()); LIBMESH_CHKERR(ierr);
+    }
 
     ierr = TSSetDuration(_ts, _max_steps, _max_time); LIBMESH_CHKERR(ierr);
     ierr = TSSetExactFinalTime(_ts,TS_EXACTFINALTIME_STEPOVER); LIBMESH_CHKERR(ierr);
-    //ierr = TSSetSolution(_ts,X_sys.vec());
-	ierr = TSSetInitialTimeStep(_ts, _initial_time, _dt); LIBMESH_CHKERR(ierr);
+    ierr = TSSetInitialTimeStep(_ts, _initial_time, _dt); LIBMESH_CHKERR(ierr);
+
+    if (_do_adjoint)
+    {
+      // Tell TS to save trajectory in the forward run.
+      ierr = TSSetSaveTrajectory(_ts);LIBMESH_CHKERR(ierr);
+    }
     ierr = TSSetFromOptions(_ts); LIBMESH_CHKERR(ierr);
-    
+
   } // end if
-  
+
   STOP_LOG("init()", "PetscTSSolver");
 }
 
-  
 //---------------------------------------------------------------------
 template <typename T>
 void PetscTSSolver<T>::solve ()
 {
   START_LOG("solve()", "PetscTSSolver");
   PetscErrorCode ierr=0;
-  
+
   // Set the solution
   PetscVector<Number>* PETScX  = cast_ptr<PetscVector<Number>*>(this->system().solution.get());
   ierr = TSSolve (_ts,PETScX->vec()); LIBMESH_CHKERR(ierr);
@@ -386,7 +400,7 @@ void PetscTSSolver<T>::solve ()
   ierr = TSGetSolveTime(_ts,&ftime);      LIBMESH_CHKERR(ierr);
   ierr = TSGetTimeStepNumber(_ts,&nsteps);LIBMESH_CHKERR(ierr);
   TSGetConvergedReason(_ts, &_reason);    LIBMESH_CHKERR(ierr);
-  
+
   PetscPrintf(this->comm().get(),"************* %s at time %g after %D steps\n",
               TSConvergedReasons[_reason], (double)ftime, nsteps);
 
@@ -395,7 +409,7 @@ void PetscTSSolver<T>::solve ()
   //this->system().update();
 }
 
-  
+
 //// ... PetscTSSolver::step(), etc.
 //
 //TSConvergedReason PetscTSSolver::get_converged_reason()
@@ -411,6 +425,33 @@ void PetscTSSolver<T>::solve ()
 //  return _reason;
 //}
 
+template <typename T>
+void PetscTSSolver<T>::adjoint_init()
+{
+  START_LOG("adjoint_init()", "PetscTSSolver");
+  PetscErrorCode ierr=0;
+
+  PetscVector<Number>* adjoint_solution  = cast_ptr<PetscVector<Number>*>(&this->system().get_adjoint_solution(1));
+  _lambda.push_back(adjoint_solution->vec());
+  _n_cost_functions = 1;
+  ierr = TSSetCostGradients(_ts,_n_cost_functions,&_lambda[0],NULL);LIBMESH_CHKERR(ierr);
+  STOP_LOG("adjoint_init()", "PetscTSSolver");
+}
+
+template <typename T>
+void PetscTSSolver<T>::adjoint_solve ()
+{
+  START_LOG("adjointsolve()", "PetscTSAdjointSolver");
+  PetscErrorCode ierr=0;
+
+  // Set the solution
+  //PetscVector<Number>* PETScX  = cast_ptr<PetscVector<Number>*>(this->system().solution.get());
+  ierr = TSAdjointSolve (_ts); LIBMESH_CHKERR(ierr);
+
+  STOP_LOG("adjointsolve()", "PetscTSAdjointSolver");
+
+  //this->system().update();
+}
 
 //------------------------------------------------------------------
 // Explicit instantiations
