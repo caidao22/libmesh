@@ -205,12 +205,12 @@ extern "C"
     //  IJpre.zero();
     // evaluate the matrices
     tssys.IJacobian(time,*tssys.current_local_solution.get(),Xdot,shift,IJ,IJpre);
-   
+
     //tssys.IJacobian(time,X,Xdot,shift,IJ,IJpre);
     IJ.close();
-    IJpre.close(); 
+    IJpre.close();
     STOP_LOG("IJacobian()", "PetscTSSolver");
-    
+
     // ---------------------- view the matrix ijac ---------------------------
     //PetscViewer mat_viewer;
     //ierr = PetscPrintf(tssys.comm().get(),"View Mat info: \n"); CHKERRABORT(tssys.comm().get(), ierr);
@@ -219,7 +219,7 @@ extern "C"
     //ierr = MatView(ijac, mat_viewer);                          CHKERRABORT(tssys.comm().get(), ierr);
     //ierr = PetscViewerDestroy(&mat_viewer);                    CHKERRABORT(tssys.comm().get(), ierr);
     // -----------------------------------------------------------------------
-    
+
     return ierr;
   }
 
@@ -261,7 +261,7 @@ UniquePtr<PetscTSSolver<T> > PetscTSSolver<T>::build(sys_type& s)
   // Build the appropriate solver
   return UniquePtr<PetscTSSolver<T> >(new PetscTSSolver<T>(s));
 }
-  
+
 #else // LIBMESH_HAVE_PETSC
 template <typename T>
 UniquePtr<PetscTSSolver<T> > PetscTSSolver<T>::build(sys_type& s)
@@ -305,7 +305,7 @@ template <typename T>
 void PetscTSSolver<T>::init ()
 {
   START_LOG("init()", "PetscTSSolver");
-  
+
   // Initialize the data structures if not done so already.
   if (!this->_initialized)
   {

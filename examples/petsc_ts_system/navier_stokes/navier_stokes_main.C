@@ -81,16 +81,16 @@ int check_libmesh()
                            "--enable-petsc or --enable-laspack");
   libmesh_example_requires(libMesh::default_solver_package() != TRILINOS_SOLVERS,
                            "--enable-petsc or --enable-laspack");
-  
+
   // Skip this 2D example if libMesh was compiled as 1D-only.
   libmesh_example_requires(2 <= LIBMESH_DIM, "2D/3D support");
-  
+
   // read control parameters from input file
 #ifndef LIBMESH_ENABLE_AMR
   libmesh_example_requires(false, "--enable-amr");
 #endif
-  
-  
+
+
   // my output: test the LibMesh compile info
 #if !defined(LIBMESH_HAVE_TRIANGLE)
   std::cout << "LIBMESH does not have Triangle interface! " << std::endl;
@@ -101,7 +101,7 @@ int check_libmesh()
 #if !defined(LIBMESH_ENABLE_AMR)
   std::cout << "LIBMESH does not enable AMR! " << std::endl;
 #endif
-  
+
   return 0;
 }
 
@@ -141,7 +141,7 @@ int main (int argc, char** argv)
             << "ny_mesh = " << ny_mesh <<", Ly = " << YB-YA <<std::endl
             << "nz_mesh = " << nz_mesh <<", Lz = " << ZB-ZA <<std::endl;
   std::cout << "initial time = " << initial_time << ", final time = " << final_time
-            << ", dt = " << dt << ", timesteps = " << n_timesteps << std::endl; 
+            << ", dt = " << dt << ", timesteps = " << n_timesteps << std::endl;
 
   // Create a mesh, with dimension to be overridden later, distributed
   // across the default MPI communicator.
@@ -239,22 +239,58 @@ int main (int argc, char** argv)
   // is this necessary, because it is the same as the \p system above
   // NSPetscTSSystem&  navier_stokes_system1 = equation_systems.get_system<NSPetscTSSystem>("Navier-Stokes");
 
+  /*
   // Petsc TS solver
   PetscTSSolver<Number> ts_solver(navier_stokes_system);
+
   ts_solver.set_duration(initial_time, final_time);
   ts_solver.set_timestep(dt, n_timesteps);
   ts_solver.set_adjoint(true);
-  //navier_stokes_system.solve();
-
   ts_solver.init();
   ts_solver.solve();
+  ts_solver.adjoint_init();
+  ts_solver.adjoint_solve();
+  */
 
-  //NumericVector<Number> & lambda = navier_stokes_system.add_adjoint_solution(1);
+  navier_stokes_system.solve();
 
-  //navier_stokes_system.adjoint_init();
-  //navier_stokes_system.adjoint_solve();
-  //ts_solver.adjoint_init();
-  //ts_solver.adjoint_solve();
+  NumericVector<Number> & lambda = navier_stokes_system.add_adjoint_solution(1);
+
+  // Set u(0) of the first element to 1
+
+  // A reference to the \p DofMap object for this system.
+  const DofMap & dof_map = navier_stokes_system.get_dof_map();
+  std::vector<dof_id_type> dof_indices;
+  std::vector<dof_id_type> dof_indices_u, dof_indices_v, dof_indices_w, dof_indices_p;
+
+  const Elem* elem = mesh.elem(1);
+
+  if (elem)
+  {
+    // Get the degree of freedom indices for the current element.
+    dof_map.dof_indices (elem, dof_indices);
+    dof_map.dof_indices (elem, dof_indices_u, u_var);
+    dof_map.dof_indices (elem, dof_indices_v, v_var);
+    dof_map.dof_indices (elem, dof_indices_p, p_var);
+
+    const unsigned int n_dofs   = dof_indices.size();
+    const unsigned int n_u_dofs = dof_indices_u.size();
+    const unsigned int n_v_dofs = dof_indices_v.size();
+    const unsigned int n_p_dofs = dof_indices_p.size();
+    unsigned int n_w_dofs = 0;
+    if(dim==3)
+    {
+      dof_map.dof_indices (elem, dof_indices_w, w_var);
+      n_w_dofs = dof_indices_w.size();
+    }
+
+    lambda.set(dof_indices_u[0],1);
+  }
+  lambda.close();
+  lambda.print();
+  navier_stokes_system.petsc_adjoint_init();
+  navier_stokes_system.petsc_adjoint_solve();
+  lambda.print();
 /*
 #ifdef LIBMESH_HAVE_EXODUS_API
   // write out the equation systems
