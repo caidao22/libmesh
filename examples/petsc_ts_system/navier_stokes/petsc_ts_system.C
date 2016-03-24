@@ -88,24 +88,23 @@ void PetscTSSystem::monitor (int step, Real time,
 }
 
 // Set up adjoint solver
-void PetscTSSystem::adjoint_init()
+void PetscTSSystem::petsc_adjoint_init()
 {
-  START_LOG("adjoint_init()", "PetscTSSystem");
+  START_LOG("petsc_adjoint_init()", "PetscTSSystem");
   ts_solver->adjoint_init();
-  STOP_LOG("adjoint_init()", "PetscTSSystem");
+  STOP_LOG("petsc_adjoint_init()", "PetscTSSystem");
 }
 
-void PetscTSSystem::adjoint_solve ()
+void PetscTSSystem::petsc_adjoint_solve ()
 {
   // Log how long the adjoint solve takes.
-  START_LOG("adjoint_solve()", "PetscTSSystem");
+  START_LOG("petsc_adjoint_solve()", "PetscTSSystem");
 
   // call ts solver to solve the system
   ts_solver->adjoint_solve();
 
-
   // Stop logging the nonlinear solve
-  STOP_LOG("adjoint_solve()", "PetscTSSystem");
+  STOP_LOG("petsc_adjoint_solve()", "PetscTSSystem");
 
   // Update the system after the solve
  // this->update();
