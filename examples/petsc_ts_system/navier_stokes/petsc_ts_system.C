@@ -14,7 +14,9 @@ namespace libMesh
 PetscTSSystem::PetscTSSystem(EquationSystems& es,
                              const std::string& name_in,
                              const unsigned int number_in):
-  Parent   (es, name_in, number_in)
+  Parent   (es, name_in, number_in),
+  // Init TS solver
+  ts_solver(UniquePtr<PetscTSSolver<Number> >(new PetscTSSolver<Number>(*this)))
 {
 }
 
@@ -35,11 +37,11 @@ void PetscTSSystem::init ()
 
 void PetscTSSystem::reinit ()
 {
-  // Re-initialize the TS solver interface
-  ts_solver->clear();
-
   // Initialize parent data
   Parent::reinit();
+
+  // Re-initialize the TS solver interface
+  ts_solver->clear();
 }
 
 void PetscTSSystem::solve ()
@@ -51,8 +53,7 @@ void PetscTSSystem::solve ()
   this->set_solver_parameters();
 
   // There is solver constructed through build(), but not init()
-  if (!ts_solver.get())
-    ts_solver->init();
+  ts_solver->init();
 
   // Call TS solver to solve the system
   ts_solver->solve();
