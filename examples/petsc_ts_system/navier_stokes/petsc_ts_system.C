@@ -16,7 +16,9 @@ PetscTSSystem::PetscTSSystem(EquationSystems& es,
                              const unsigned int number_in):
   Parent   (es, name_in, number_in),
   // Init TS solver
-  ts_solver(UniquePtr<PetscTSSolver<Number> >(new PetscTSSolver<Number>(*this)))
+  ts_solver(UniquePtr<PetscTSSolver<Number> >(new PetscTSSolver<Number>(*this))),
+  time(0),
+  timestep(0)
 {
 }
 
@@ -57,6 +59,9 @@ void PetscTSSystem::solve ()
 
   // Call TS solver to solve the system
   ts_solver->solve();
+
+  time = ts_solver->get_time();
+  timestep = ts_solver->get_time_step_number();
 
   // Stop logging the nonlinear solve
   STOP_LOG("solve()", "PetscTSSystem");

@@ -388,7 +388,7 @@ template <typename T>
 void PetscTSSolver<T>::solve ()
 {
   START_LOG("solve()", "PetscTSSolver");
-  PetscErrorCode ierr=0;
+  PetscErrorCode ierr = 0;
 
   // Set the solution
   PetscVector<Number>* PETScX  = cast_ptr<PetscVector<Number>*>(this->system().solution.get());
@@ -429,9 +429,9 @@ template <typename T>
 void PetscTSSolver<T>::adjoint_init()
 {
   START_LOG("adjoint_init()", "PetscTSSolver");
-  PetscErrorCode ierr=0;
+  PetscErrorCode ierr = 0;
 
-  PetscVector<Number>* adjoint_solution  = cast_ptr<PetscVector<Number>*>(&this->system().get_adjoint_solution(1));
+  PetscVector<Number>* adjoint_solution  = cast_ptr<PetscVector<Number>*>(&this->system().get_adjoint_solution(0));
   _lambda.push_back(adjoint_solution->vec());
   _n_cost_functions = 1;
   ierr = TSSetCostGradients(_ts,_n_cost_functions,&_lambda[0],NULL);LIBMESH_CHKERR(ierr);
@@ -442,7 +442,7 @@ template <typename T>
 void PetscTSSolver<T>::adjoint_solve ()
 {
   START_LOG("adjointsolve()", "PetscTSAdjointSolver");
-  PetscErrorCode ierr=0;
+  PetscErrorCode ierr = 0;
 
   // Set the solution
   //PetscVector<Number>* PETScX  = cast_ptr<PetscVector<Number>*>(this->system().solution.get());
@@ -451,6 +451,26 @@ void PetscTSSolver<T>::adjoint_solve ()
   STOP_LOG("adjointsolve()", "PetscTSAdjointSolver");
 
   //this->system().update();
+}
+
+template <typename T>
+PetscReal PetscTSSolver<T>::get_time ()
+{
+  PetscReal time;
+  PetscErrorCode ierr = 0;
+
+  ierr = TSGetTime(_ts,&time); LIBMESH_CHKERR(ierr);
+  return time;
+}
+
+template <typename T>
+PetscInt PetscTSSolver<T>::get_time_step_number ()
+{
+  PetscInt timestep;
+  PetscErrorCode ierr = 0;
+
+  ierr = TSGetTimeStepNumber(_ts,&timestep); LIBMESH_CHKERR(ierr);
+  return timestep;
 }
 
 //------------------------------------------------------------------

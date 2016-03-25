@@ -124,6 +124,14 @@ public:
   void petsc_adjoint_init();
   void petsc_adjoint_solve ();
 
+  // Final time
+  Real time;
+
+  // Final time step
+  int timestep;
+
+
+
 protected:
   /**
    * Copy system parameters to the TS solver.
