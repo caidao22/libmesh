@@ -163,7 +163,6 @@ public:
   */
   void adjoint_solve ();
 
-
   /**
   * Returns the currently-available (or most recently obtained, if the TS object has
   * been destroyed) convergence reason.  Refer to PETSc docs for the meaning of different
@@ -172,6 +171,9 @@ public:
   TSConvergedReason get_converged_reason(){ return _reason; }
 
   // ... and other functions querying the underlying TS state
+  PetscReal get_time ();
+
+  PetscInt get_time_step_number ();
 
 protected:
   /**

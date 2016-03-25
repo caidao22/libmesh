@@ -254,7 +254,7 @@ int main (int argc, char** argv)
 
   navier_stokes_system.solve();
 
-  NumericVector<Number> & lambda = navier_stokes_system.add_adjoint_solution(1);
+  NumericVector<Number> & lambda = navier_stokes_system.add_adjoint_solution(0);
 
   // Set u(0) of the first element to 1
 
@@ -291,17 +291,26 @@ int main (int argc, char** argv)
   navier_stokes_system.petsc_adjoint_init();
   navier_stokes_system.petsc_adjoint_solve();
   lambda.print();
-/*
+
 #ifdef LIBMESH_HAVE_EXODUS_API
+  // Swap adjoint and primal solution so that we can print it out
+  navier_stokes_system.solution->swap(lambda);
+
   // write out the equation systems
   std::string exodus_filename("ns_system_adjoint.e");
-  ExodusII_IO(navier_stokes_system.get_mesh()).write_equation_systems (exodus_filename,navier_stokes_system.get_equation_systems());
+  ExodusII_IO(navier_stokes_system.get_mesh()).write_equation_systems (exodus_filename,
+                                                                       navier_stokes_system.get_equation_systems());
   // output options from transient ex1
   ExodusII_IO exodus_IO(navier_stokes_system.get_mesh());
   exodus_IO.append(true);
-  exodus_IO.write_timestep (exodus_filename, this->get_equation_systems(),step+1,time);
+  exodus_IO.write_timestep (exodus_filename,
+                            navier_stokes_system.get_equation_systems(),
+                            navier_stokes_system.timestep,navier_stokes_system.time);
+
+  // Swap back
+  navier_stokes_system.solution->swap(lambda);
 #endif // #ifdef LIBMESH_HAVE_EXODUS_API
-*/
+
   return 0;
 }
 
