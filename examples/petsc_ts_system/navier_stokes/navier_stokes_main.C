@@ -263,7 +263,7 @@ int main (int argc, char** argv)
   std::vector<dof_id_type> dof_indices;
   std::vector<dof_id_type> dof_indices_u, dof_indices_v, dof_indices_w, dof_indices_p;
 
-  const Elem* elem = mesh.elem(1);
+  const Elem* elem = mesh.elem(mesh.n_elem()/2);
 
   if (elem)
   {
@@ -283,12 +283,13 @@ int main (int argc, char** argv)
       dof_map.dof_indices (elem, dof_indices_w, w_var);
       n_w_dofs = dof_indices_w.size();
     }
-
-    lambda.set(dof_indices_u[0],1);
+    printf("nv=%d\n",n_v_dofs);
+    lambda.set(dof_indices_v[n_v_dofs/2],1);
   }
   lambda.close();
   lambda.print();
-  navier_stokes_system.petsc_adjoint_init();
+  const int nadj = 1;
+  navier_stokes_system.petsc_adjoint_init(1);
   navier_stokes_system.petsc_adjoint_solve();
   lambda.print();
 

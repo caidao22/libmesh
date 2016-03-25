@@ -94,10 +94,10 @@ void PetscTSSystem::monitor (int step, Real time,
 }
 
 // Set up adjoint solver
-void PetscTSSystem::petsc_adjoint_init()
+void PetscTSSystem::petsc_adjoint_init(int n_cost_functions)
 {
   START_LOG("petsc_adjoint_init()", "PetscTSSystem");
-  ts_solver->adjoint_init();
+  ts_solver->adjoint_init(n_cost_functions);
   STOP_LOG("petsc_adjoint_init()", "PetscTSSystem");
 }
 
@@ -129,15 +129,11 @@ void PetscTSSystem::set_solver_parameters ()
   const unsigned int nsteps = es.parameters.get<unsigned int>("time steps");
   const bool do_adjoint = es.parameters.get<bool>("adjoint");
 
-  printf("initial time = %f, final time = %f, dt = %f, time steps = %u\n",
-         t0, maxt, dt, nsteps);
-
   // Set the parameters for TS solver
   if (ts_solver.get() )
   {
     ts_solver->set_duration(t0, maxt);
     ts_solver->set_timestep (dt,nsteps);
-    std::cout<<"do adjoint="<<do_adjoint<<std::endl;
     ts_solver->set_adjoint(do_adjoint);
   }
 }
