@@ -426,14 +426,18 @@ void PetscTSSolver<T>::solve ()
 //}
 
 template <typename T>
-void PetscTSSolver<T>::adjoint_init()
+void PetscTSSolver<T>::adjoint_init(int n_cost_functions)
 {
   START_LOG("adjoint_init()", "PetscTSSolver");
+  PetscVector<Number>* adjoint_solution;
   PetscErrorCode ierr = 0;
 
-  PetscVector<Number>* adjoint_solution  = cast_ptr<PetscVector<Number>*>(&this->system().get_adjoint_solution(0));
-  _lambda.push_back(adjoint_solution->vec());
-  _n_cost_functions = 1;
+  _n_cost_functions = n_cost_functions;
+  for (int i=0; i< n_cost_functions; i++)
+  {
+    adjoint_solution = cast_ptr<PetscVector<Number>*>(&this->system().get_adjoint_solution(i));
+    _lambda.push_back(adjoint_solution->vec());
+  }
   ierr = TSSetCostGradients(_ts,_n_cost_functions,&_lambda[0],NULL);LIBMESH_CHKERR(ierr);
   STOP_LOG("adjoint_init()", "PetscTSSolver");
 }

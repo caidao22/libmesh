@@ -156,7 +156,7 @@ public:
   /**
   * Initialize adjoint solver
   */
-  void adjoint_init();
+  void adjoint_init(int n_cost_functions);
 
   /**
   * Call the Petsc TSAdjoint solver to integrate from final to initial time for sensitivities.

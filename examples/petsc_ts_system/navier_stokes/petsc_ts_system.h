@@ -121,7 +121,7 @@ public:
   // The optional callback methods should be noops, rather than purely abstract
   // so that the user doesn't have to implement a bunch of dummy methods (see IFunction and IJacobian above).
 
-  void petsc_adjoint_init();
+  void petsc_adjoint_init(int n_cost_functions);
   void petsc_adjoint_solve ();
 
   // Final time
