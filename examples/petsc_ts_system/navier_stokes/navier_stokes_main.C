@@ -42,6 +42,7 @@
 #include "libmesh/mesh.h"
 #include "libmesh/serial_mesh.h"
 #include "libmesh/dof_map.h"
+#include "libmesh/node.h"
 #include "libmesh/mesh_generation.h"
 #include "libmesh/exodusII_io.h"
 #include "libmesh/equation_systems.h"
@@ -257,7 +258,27 @@ int main (int argc, char** argv)
   NumericVector<Number> & lambda = navier_stokes_system.add_adjoint_solution(0);
 
   // Set u(0) of the first element to 1
+  const Real dx = (XB-XA)/nx_mesh;
+  const Real dy = (YB-YA)/ny_mesh;
+  const Point centerpoint((XB-XA)/4.,(YB-YA)/2.);
+  MeshBase::node_iterator cur_node = mesh.local_nodes_begin();
+  const MeshBase::node_iterator end_node = mesh.local_nodes_end();
 
+  Node* closest_node;
+  Real closest_distance = (XB-XA)*(XB-XA)+(YB-YA)*(YB-YA);
+
+  // Works only serail mesh
+  for(;cur_node!=end_node;cur_node++)
+  {
+    Real cur_distance = (*static_cast<Point*>(*cur_node)-centerpoint).size();
+    if( cur_distance < closest_distance)
+    {
+      closest_node = *cur_node;
+      closest_distance = cur_distance;
+    }
+  }
+  lambda.set(closest_node->dof_number(0,v_var,0),1);
+  /*
   // A reference to the \p DofMap object for this system.
   const DofMap & dof_map = navier_stokes_system.get_dof_map();
   std::vector<dof_id_type> dof_indices;
@@ -286,6 +307,7 @@ int main (int argc, char** argv)
     printf("nv=%d\n",n_v_dofs);
     lambda.set(dof_indices_v[n_v_dofs/2],1);
   }
+  */
   lambda.close();
   lambda.print();
   const int nadj = 1;
