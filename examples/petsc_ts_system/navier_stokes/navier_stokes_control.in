@@ -1,14 +1,11 @@
 # max linear iterations for the iterative solver
-max_linear_iterations = 10000
-
+max_linear_iterations = 100
 
 # Mesh dimensionality
 dimension = 2
 
-
 # Use higher quadrature order when computing errors?
 extra_error_quadrature = 0
-
 
 # viscosity
 viscosity = 1.0
@@ -26,22 +23,24 @@ final_time  = 200.0
 # periodic condition for velocity components
 periodicity = true
 
-
 # write out the equation system
 write_es = true
 
-
 # interval for writing out the equation system
 write_interval = 1
-
 
 # size of simulation domain
 XA = -50.
 XB = +50.
 YA = -10.
 YB = +10.
-ZA = -50
-ZB = +50
+ZA = -50.
+ZB = +50.
+
+# target point
+XT = 0.
+YT = 0.
+ZT = 0.
 
 # coarse mesh for debug purpose
 #nx_mesh = 20
@@ -49,12 +48,11 @@ ZB = +50
 #nz_mesh = 20
 
 # finer mesh for test purpose
-nx_mesh = 50
-ny_mesh = 10
-nz_mesh = 50
-
+#nx_mesh = 50
+#ny_mesh = 10
+#nz_mesh = 50
 
 # fine mesh for simulation
-#nx_mesh = 150
-#ny_mesh = 30
-#nz_mesh = 150
+nx_mesh = 150
+ny_mesh = 30
+nz_mesh = 150

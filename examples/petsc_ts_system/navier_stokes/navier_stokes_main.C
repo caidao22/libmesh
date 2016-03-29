@@ -133,6 +133,9 @@ int main (int argc, char** argv)
   const Real XA = input_file("XA", -1.);  const Real XB = input_file("XB", +1.);
   const Real YA = input_file("YA", -1.);  const Real YB = input_file("YB", +1.);
   const Real ZA = input_file("ZA", -1.);  const Real ZB = input_file("ZB", +1.);
+  const Real XT = input_file("XT", 0.);
+  const Real YT = input_file("YT", 0.);
+  const Real ZT = input_file("ZT", 0.);
   const unsigned int nx_mesh = input_file("nx_mesh", 10);
   const unsigned int ny_mesh = input_file("ny_mesh", 10);
   const unsigned int nz_mesh = input_file("nz_mesh", 10);
@@ -194,6 +197,9 @@ int main (int argc, char** argv)
   equation_systems.parameters.set<Real>        ("YB_boundary") = YB;
   equation_systems.parameters.set<Real>        ("ZA_boundary") = ZA;
   equation_systems.parameters.set<Real>        ("ZB_boundary") = ZB;
+  equation_systems.parameters.set<Real>        ("X_target")    = XT;
+  equation_systems.parameters.set<Real>        ("Y_target")    = YT;
+  equation_systems.parameters.set<Real>        ("Z_target")    = ZT;
   equation_systems.parameters.set<bool>        ("periodicity") = periodicity;
 
 
@@ -203,6 +209,7 @@ int main (int argc, char** argv)
   equation_systems.parameters.set<Real>        ("final time")  = final_time;
 
   equation_systems.parameters.set<bool>        ("adjoint")  = true;
+
   // add periodic boundary conditions for u v w, but not for p
   if (periodicity) //periodicity
   {
@@ -227,6 +234,11 @@ int main (int argc, char** argv)
     dof_map.add_periodic_boundary(horz);
     std::cout<<"========================= periodic bc is applied ========================"<<std::endl;
   }
+  else //
+  {
+
+  }
+
   // Initialize the data structures for the equation system.
   equation_systems.init ();
 
@@ -255,22 +267,20 @@ int main (int argc, char** argv)
 
   navier_stokes_system.solve();
 
+  // Add adjoint variable
   NumericVector<Number> & lambda = navier_stokes_system.add_adjoint_solution(0);
 
-  // Set u(0) of the first element to 1
-  const Real dx = (XB-XA)/nx_mesh;
-  const Real dy = (YB-YA)/ny_mesh;
-  const Point centerpoint((XB-XA)/4.,(YB-YA)/2.);
+  // Set the solution at the target node to be the cost function
+  const Point targetpoint(XT,YT);
+
+  // Works only for serial mesh
   MeshBase::node_iterator cur_node = mesh.local_nodes_begin();
   const MeshBase::node_iterator end_node = mesh.local_nodes_end();
-
   Node* closest_node;
   Real closest_distance = (XB-XA)*(XB-XA)+(YB-YA)*(YB-YA);
-
-  // Works only serail mesh
   for(;cur_node!=end_node;cur_node++)
   {
-    Real cur_distance = (*static_cast<Point*>(*cur_node)-centerpoint).size();
+    Real cur_distance = (*static_cast<Point*>(*cur_node)-targetpoint).size();
     if( cur_distance < closest_distance)
     {
       closest_node = *cur_node;
@@ -278,40 +288,11 @@ int main (int argc, char** argv)
     }
   }
   lambda.set(closest_node->dof_number(0,v_var,0),1);
-  /*
-  // A reference to the \p DofMap object for this system.
-  const DofMap & dof_map = navier_stokes_system.get_dof_map();
-  std::vector<dof_id_type> dof_indices;
-  std::vector<dof_id_type> dof_indices_u, dof_indices_v, dof_indices_w, dof_indices_p;
-
-  const Elem* elem = mesh.elem(mesh.n_elem()/2);
-
-  if (elem)
-  {
-    // Get the degree of freedom indices for the current element.
-    dof_map.dof_indices (elem, dof_indices);
-    dof_map.dof_indices (elem, dof_indices_u, u_var);
-    dof_map.dof_indices (elem, dof_indices_v, v_var);
-    dof_map.dof_indices (elem, dof_indices_p, p_var);
-
-    const unsigned int n_dofs   = dof_indices.size();
-    const unsigned int n_u_dofs = dof_indices_u.size();
-    const unsigned int n_v_dofs = dof_indices_v.size();
-    const unsigned int n_p_dofs = dof_indices_p.size();
-    unsigned int n_w_dofs = 0;
-    if(dim==3)
-    {
-      dof_map.dof_indices (elem, dof_indices_w, w_var);
-      n_w_dofs = dof_indices_w.size();
-    }
-    printf("nv=%d\n",n_v_dofs);
-    lambda.set(dof_indices_v[n_v_dofs/2],1);
-  }
-  */
   lambda.close();
   lambda.print();
+
   const int nadj = 1;
-  navier_stokes_system.petsc_adjoint_init(1);
+  navier_stokes_system.petsc_adjoint_init(nadj);
   navier_stokes_system.petsc_adjoint_solve();
   lambda.print();
 
