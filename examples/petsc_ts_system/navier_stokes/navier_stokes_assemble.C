@@ -94,8 +94,8 @@ void assemble_ifunction (libMesh::EquationSystems& es,
   FEType fe_pres_type = navier_stokes_system.variable_type(p_var);
 
   // Build a Finite Element object for "u" and "p"
-  AutoPtr<FEBase> fe_vel  (FEBase::build(dim, fe_vel_type));
-  AutoPtr<FEBase> fe_pres (FEBase::build(dim, fe_pres_type));
+  UniquePtr<FEBase> fe_vel  (FEBase::build(dim, fe_vel_type));
+  UniquePtr<FEBase> fe_pres (FEBase::build(dim, fe_pres_type));
 
   // A Gauss quadrature rule for numerical integration.
   QGauss qrule (dim, fe_vel_type.default_quadrature_order());
@@ -432,8 +432,8 @@ void assemble_ijacobian (libMesh::EquationSystems& es,
   FEType fe_pres_type = navier_stokes_system.variable_type(p_var);
 
   // Build a Finite Element object for "u" and "p"
-  AutoPtr<FEBase> fe_vel  (FEBase::build(dim, fe_vel_type));
-  AutoPtr<FEBase> fe_pres (FEBase::build(dim, fe_pres_type));
+  UniquePtr<FEBase> fe_vel  (FEBase::build(dim, fe_vel_type));
+  UniquePtr<FEBase> fe_pres (FEBase::build(dim, fe_pres_type));
 
   // A Gauss quadrature rule for numerical integration.
   QGauss qrule (dim, fe_vel_type.default_quadrature_order());
@@ -719,7 +719,7 @@ void compute_element_rhs(const MeshBase& mesh,
     {
       // 2.2 if this element has NO neighors in side s direction,
       // then side s must be on the boundary.
-      if (elem->neighbor(s) == NULL)
+      if (elem->neighbor_ptr(s) == NULL)
       {
         // First, check if this side is on the inlet or outlet boundary
         // Boundary ids
@@ -745,14 +745,14 @@ void compute_element_rhs(const MeshBase& mesh,
         // compute the pressure traction along this side.
 
         // construct the side element, which has a lower dimension than the body elem
-        AutoPtr<Elem> s_elem ( elem->build_side(s) );
+        UniquePtr<Elem> s_elem (const_cast<Elem *>(elem->build_side_ptr(s).release()) );
 
         // for reinit(side_elem), note: don't use release(), which leads to leak memory
         const Elem* side_elem = s_elem.get();
 
         // build FEBase of the side element. (* use vel instead of pres!)
         FEType side_fe_type = fe_vel.get_fe_type();
-        AutoPtr<FEBase> side_fe_vel ( FEBase::build(dim-1, side_fe_type) );
+        UniquePtr<FEBase> side_fe_vel ( FEBase::build(dim-1, side_fe_type) );
 
         // A Gauss quadrature rule for numerical integration.
         QGauss side_qrule (dim-1, side_fe_type.default_quadrature_order());
@@ -801,7 +801,7 @@ void compute_element_rhs(const MeshBase& mesh,
           // Loop over the nodes on the side.
           for (unsigned int ns=0; ns<side_elem->n_nodes(); ns++)
           {
-            if (elem->node(n) == side_elem->node(ns)) // compare global id (dof_id_type)
+            if (elem->node_id(n) == side_elem->node_id(ns)) // compare global id (dof_id_type)
               Fu(n) += Fu_s[ns];
           } // end for ns-loop
         } // end for n-loop
@@ -842,7 +842,7 @@ void apply_bc_by_penalty(const MeshBase& mesh,
   // If the element has no neighbor on a side then that
   // side MUST live on a boundary of the domain.
   for (unsigned int s=0; s<elem->n_sides(); s++)
-    if (elem->neighbor(s) == NULL)
+    if (elem->neighbor_ptr(s) == NULL)
     {
       // Boundary ids are set internally by build_square().
       // build_square():  0=bottom; 1=right; 2=top; 3=left
@@ -856,7 +856,7 @@ void apply_bc_by_penalty(const MeshBase& mesh,
       // this operation is only on the inlet or outlet boundary
       if( inlet_boundary || outlet_boundary )
       {
-        AutoPtr<Elem> p_side ( elem->side(s) );
+        UniquePtr<Elem> p_side (const_cast<Elem *>(elem->side_ptr(s).release()) );
         for (unsigned int ns=0; ns<p_side->n_nodes(); ns++)
         {
           // if this is inlet/outlet, We impose the pressure Dirichlet BC by penalty method.
@@ -868,7 +868,7 @@ void apply_bc_by_penalty(const MeshBase& mesh,
           // end if-else
 
           for (unsigned int n=0; n<elem->n_nodes(); n++)
-            if (elem->node(n) == p_side->node(ns))
+            if (elem->node_id(n) == p_side->node_id(ns))
             {
               if (matrix_or_vector=="matrix")
                 Kpp(n,n) += penalty;        // Matrix contribution.
@@ -892,7 +892,7 @@ void apply_bc_by_penalty(const MeshBase& mesh,
       // the following part -2- will impose the no-slip BC by penalty method.
 
       // -2.- build the full-order side element for "v" Dirichlet BC.
-      AutoPtr<Elem> side (elem->build_side(s));
+      UniquePtr<Elem> side (const_cast<Elem *>(elem->build_side_ptr(s).release()) );
       for (unsigned int ns=0; ns<side->n_nodes(); ns++)
       {
         // Otherwise if this is the wall of the channel, set u/v/w = 0
@@ -902,7 +902,7 @@ void apply_bc_by_penalty(const MeshBase& mesh,
         // That defined where in the element matrix
         // the boundary condition will be applied.
         for (unsigned int n=0; n<elem->n_nodes(); n++)
-          if (elem->node(n) == side->node(ns))
+          if (elem->node_id(n) == side->node_id(ns))
           {
             if (matrix_or_vector=="matrix")       // Matrix contribution.
             { Kuu(n,n) += penalty;      Kvv(n,n) += penalty;}
@@ -925,11 +925,11 @@ void apply_bc_by_penalty(const MeshBase& mesh,
               // end if-else
             }
             //penalty_u[n] = true;   // label the penalized local dof indices
-          } // end if (elem->node(n) == side->node(ns))
+          } // end if (elem->node_id(n) == side->node_id(ns))
         // end for n-loop
       } // end for ns-loop
 
-    } // end if (elem->neighbor(side) == NULL)
+    } // end if (elem->neighbor_ptr(side) == NULL)
   // -- end for s-loop
 
   // Pin the pressure to zero at global node number "pressure_node". This effectively
@@ -941,7 +941,7 @@ void apply_bc_by_penalty(const MeshBase& mesh,
     const unsigned int pressure_node = 0;
     const Real p_value               = 0.0;
     for (unsigned int c=0; c<elem->n_nodes(); c++)
-      if (elem->node(c) == pressure_node)
+      if (elem->node_id(c) == pressure_node)
       {
         Kpp(c,c) += penalty;
         Fp(c)    += penalty*p_value;
@@ -1013,12 +1013,13 @@ void NSPetscTSSystem::IJacobian (Real time,
   //IJ.zero();
   this->matrix->zero(); // IJ points to this->matrix
   assemble_ijacobian (this->get_equation_systems(), "Navier-Stokes", time, shift, X, Xdot);
-  IJ =  (*(this->matrix) ); // this is NOT assignable!
+  //IJ =  *(this->matrix); // this is NOT assignable!
   this->matrix->close();
 }
 
-void NSPetscTSSystem::monitor (int  step, Real time,
-                             NumericVector<Number>& X)
+void NSPetscTSSystem::monitor (int  step,
+                               Real time,
+                               NumericVector<Number>& X)
 {
 
 #ifdef LIBMESH_HAVE_EXODUS_API
