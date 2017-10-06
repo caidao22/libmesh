@@ -287,7 +287,8 @@ int main (int argc, char** argv)
       closest_distance = cur_distance;
     }
   }
-  lambda.set(closest_node->dof_number(0,v_var,0),1);
+  //lambda.set(closest_node->dof_number(0,v_var,0),1);
+  lambda.set(closest_node->dof_number(0,u_var,0),1);
   lambda.close();
   lambda.print();
 

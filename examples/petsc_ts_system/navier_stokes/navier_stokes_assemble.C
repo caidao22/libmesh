@@ -745,7 +745,7 @@ void compute_element_rhs(const MeshBase& mesh,
         // compute the pressure traction along this side.
 
         // construct the side element, which has a lower dimension than the body elem
-        UniquePtr<Elem> s_elem (const_cast<Elem *>(elem->build_side_ptr(s).release()) );
+        UniquePtr<const Elem> s_elem (elem->build_side_ptr(s) );
 
         // for reinit(side_elem), note: don't use release(), which leads to leak memory
         const Elem* side_elem = s_elem.get();
@@ -856,7 +856,7 @@ void apply_bc_by_penalty(const MeshBase& mesh,
       // this operation is only on the inlet or outlet boundary
       if( inlet_boundary || outlet_boundary )
       {
-        UniquePtr<Elem> p_side (const_cast<Elem *>(elem->side_ptr(s).release()) );
+        UniquePtr<const Elem> p_side (elem->side_ptr(s) );
         for (unsigned int ns=0; ns<p_side->n_nodes(); ns++)
         {
           // if this is inlet/outlet, We impose the pressure Dirichlet BC by penalty method.
@@ -892,7 +892,7 @@ void apply_bc_by_penalty(const MeshBase& mesh,
       // the following part -2- will impose the no-slip BC by penalty method.
 
       // -2.- build the full-order side element for "v" Dirichlet BC.
-      UniquePtr<Elem> side (const_cast<Elem *>(elem->build_side_ptr(s).release()) );
+      UniquePtr<const Elem> side (elem->build_side_ptr(s) );
       for (unsigned int ns=0; ns<side->n_nodes(); ns++)
       {
         // Otherwise if this is the wall of the channel, set u/v/w = 0
