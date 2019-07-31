@@ -1174,8 +1174,8 @@ PetscErrorCode  DMCreate_libMesh(DM dm)
 
   dm->ops->refine             = 0; // DMRefine_libMesh;
   dm->ops->coarsen            = 0; // DMCoarsen_libMesh;
-  dm->ops->getinjection       = 0; // DMGetInjection_libMesh;
-  dm->ops->getaggregates      = 0; // DMGetAggregates_libMesh;
+  dm->ops->createinjection    = 0; // DMGetInjection_libMesh;
+// dm->ops->getaggregates      = 0; // DMGetAggregates_libMesh;
 
 #if PETSC_RELEASE_LESS_THAN(3,3,1)
   dm->ops->createfielddecompositiondm  = DMCreateFieldDecompositionDM_libMesh;

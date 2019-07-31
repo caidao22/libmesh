@@ -291,8 +291,8 @@ DiffSolver::SolveResult convert_solve_result(SNESConvergedReason r)
 #endif
       return DiffSolver::CONVERGED_RELATIVE_STEP;
     case SNES_CONVERGED_ITS:
-    case SNES_CONVERGED_TR_DELTA:
-      return DiffSolver::CONVERGED_NO_REASON;
+    case SNES_DIVERGED_TR_DELTA:
+      return DiffSolver::DIVERGED_NO_REASON;
     case SNES_DIVERGED_FUNCTION_DOMAIN:
     case SNES_DIVERGED_FUNCTION_COUNT:
     case SNES_DIVERGED_FNORM_NAN:
